@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../main.dart';
 import 'theme.dart';
 import 'routes.dart';
 
@@ -14,6 +15,7 @@ class NexusApp extends StatelessWidget {
       theme: nexusTheme,
       initialRoute: '/',
       routes: routes,
+      navigatorKey: navigatorKey,
     );
   }
 }

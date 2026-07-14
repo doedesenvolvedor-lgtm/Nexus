@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Admin - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: rgba(22, 33, 62, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            font-size: 32px;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .logo p {
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+        }
+
+        input::placeholder {
+            color: #666;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 10px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .error {
+            background: rgba(248, 113, 113, 0.2);
+            border: 1px solid rgba(248, 113, 113, 0.5);
+            color: #f87171;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .info {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.5);
+            color: #3b82f6;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            margin-top: 20px;
+            line-height: 1.6;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .demo-note {
+            background: rgba(102, 126, 234, 0.1);
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .demo-note strong {
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <h1>🎬 Nexus</h1>
+            <p>Painel Administrativo</p>
+        </div>
+
+        <div class="demo-note">
+            <strong>Modo Demo:</strong><br>
+            Use email: <code>admin@nexus.com</code><br>
+            Senha: qualquer valor (será mockado)
+        </div>
+
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="error" id="errorMessage"></div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    placeholder="admin@nexus.com"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">Senha</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    placeholder="••••••••"
+                    required
+                >
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                <span class="spinner" id="spinner" style="display: none;"></span>
+                <span id="btnText">Entrar</span>
+            </button>
+
+            <div class="loading" id="loading">
+                Autenticando...
+            </div>
+        </form>
+
+        <div class="info">
+            📝 <strong>Nota:</strong> Em produção, implementar autenticação real com validação de credenciais no backend.
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+
+        async function handleLogin(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('errorMessage');
+            const submitBtn = document.getElementById('submitBtn');
+            const spinner = document.getElementById('spinner');
+            const btnText = document.getElementById('btnText');
+
+            errorDiv.classList.remove('show');
+            submitBtn.disabled = true;
+            spinner.style.display = 'inline-block';
+
+            try {
+                // Fazer login normalmente
+                const loginResponse = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password,
+                    }),
+                });
+
+                if (!loginResponse.ok) {
+                    throw new Error('Email ou senha incorretos');
+                }
+
+                const loginData = await loginResponse.json();
+                const token = loginData.access_token;
+
+                // Tentar acessar endpoints de admin para validar
+                const adminResponse = await fetch(`${API_URL}/admin/trials/analytics/summary`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+
+                if (adminResponse.status === 403) {
+                    throw new Error('Você não tem permissão de administrador');
+                }
+
+                if (!adminResponse.ok) {
+                    throw new Error('Erro ao validar permissões');
+                }
+
+                // Salvar token e redirecionar
+                localStorage.setItem('admin_token', token);
+                localStorage.setItem('admin_email', email);
+                
+                // Redirecionar para dashboard
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 500);
+
+            } catch (error) {
+                errorDiv.textContent = '❌ ' + error.message;
+                errorDiv.classList.add('show');
+                submitBtn.disabled = false;
+                spinner.style.display = 'none';
+            }
+        }
+
+        // Detectar tecla Enter
+        document.getElementById('email').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('password').focus();
+        });
+
+        document.getElementById('password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+        });
+
+        // Redirecionamentos
+        window.addEventListener('load', () => {
+            // Se já logado, redirecionar para dashboard
+            if (localStorage.getItem('admin_token')) {
+                window.location.href = 'dashboard.html';
+            }
+        });
+    </script>
+</body>
+</html>

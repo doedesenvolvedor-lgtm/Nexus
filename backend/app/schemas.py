@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
@@ -20,9 +21,29 @@ class UserResponse(BaseModel):
         from_attributes = True
 
 
+class UserDetailResponse(BaseModel):
+    id: UUID
+    email: EmailStr
+    username: Optional[str] = None
+    is_premium: bool = False
+    subscription: Optional["SubscriptionResponse"] = None
+
+    class Config:
+        from_attributes = True
+
+
 class Login(BaseModel):
     email: EmailStr
     password: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
 
 
 class UserLogin(BaseModel):
@@ -162,16 +183,34 @@ class WatchListResponse(BaseModel):
 class SubscriptionCreate(BaseModel):
     user_id: UUID
     plan: str = "Free"
+    plan_type: str = "Free"
     status: str = "active"
-    renewal_date: Optional[str] = None
+    trial_started_at: Optional[datetime] = None
+    trial_ends_at: Optional[datetime] = None
+    renewal_date: Optional[datetime] = None
 
 
 class SubscriptionResponse(BaseModel):
     id: UUID
     user_id: UUID
     plan: str
+    plan_type: str
     status: str
-    renewal_date: Optional[str] = None
+    trial_started_at: Optional[datetime] = None
+    trial_ends_at: Optional[datetime] = None
+    renewal_date: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TrialStatusResponse(BaseModel):
+    is_trial: bool
+    days_remaining: int
+    trial_ends_at: Optional[datetime] = None
+    plan_type: str
 
     class Config:
         from_attributes = True
@@ -197,3 +236,8 @@ class PaymentResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class AdminEmailAnnouncementRequest(BaseModel):
+    title: str
+    message: str

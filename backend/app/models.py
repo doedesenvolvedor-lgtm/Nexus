@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -129,12 +129,16 @@ class Payment(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    provider = Column(String(30), nullable=False)
+    provider = Column(String(30), nullable=False)  # mercadopago, stripe
+    payment_id = Column(String(255), nullable=True)  # ID do pagamento na plataforma
     amount = Column(Float, nullable=False)
     currency = Column(String(10), default="BRL")
-    status = Column(String(20), default="pending")
+    status = Column(String(20), default="pending")  # pending, approved, rejected, refunded
+    plan = Column(String(30), nullable=True)  # Basic, Standard, Premium
     transaction_id = Column(String(255), nullable=True)
+    metadata_json = Column("metadata", JSON, nullable=True)  # Dados adicionais (payer_email, etc)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     user = relationship("User", back_populates="payments")
 
@@ -145,7 +149,44 @@ class Subscription(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     plan = Column(String(30), default="Free")
+    plan_type = Column(String(20), default="Free")  # Trial, Free, Premium
     status = Column(String(20), default="active")
-    renewal_date = Column(DateTime, nullable=True)
+    trial_started_at = Column(DateTime(timezone=True), nullable=True)
+    trial_ends_at = Column(DateTime(timezone=True), nullable=True)
+    renewal_date = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     user = relationship("User", back_populates="subscriptions")
+
+
+class QueueJob(Base):
+    __tablename__ = "queue_jobs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    queue_name = Column(String(100), nullable=False, index=True)
+    job_type = Column(String(100), nullable=False, index=True)
+    status = Column(String(20), nullable=False, default="queued", index=True)
+    items_count = Column(Integer, nullable=False, default=0)
+    processed_count = Column(Integer, nullable=False, default=0)
+    payload = Column(JSON, nullable=True)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class DeviceToken(Base):
+    __tablename__ = "device_tokens"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    device_token = Column(String(500), nullable=False, unique=True, index=True)
+    device_type = Column(String(20), nullable=False)  # ios, android
+    device_name = Column(String(255), nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
+
+    user = relationship("User")

@@ -10,3 +10,8 @@ email-validator
 python-dotenv
 redis
 alembic
+mercadopago
+aiofiles
+requests
+httpx
+firebase-admin

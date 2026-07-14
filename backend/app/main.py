@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.database import Base, engine
-from app.routers import admin, auth, episodes, history, media, payments, profiles, ratings, recommendations, subscriptions, watchlist, webhooks
+from app.routers import admin, auth, episodes, history, media, notifications, payments, profiles, queue_jobs, ratings, recommendations, subscriptions, subscriptions_trial, watchlist, webhooks
 
 app = FastAPI(
     title="Nexus Streaming",
@@ -25,9 +25,12 @@ app.include_router(ratings.router, prefix="/ratings")
 app.include_router(watchlist.router, prefix="/watchlist")
 app.include_router(recommendations.router, prefix="/recommendations")
 app.include_router(subscriptions.router, prefix="/subscription")
+app.include_router(subscriptions_trial.router)
 app.include_router(payments.router)
 app.include_router(webhooks.router, prefix="/webhook")
+app.include_router(notifications.router)
 app.include_router(admin.router, prefix="/admin")
+app.include_router(queue_jobs.router)
 
 streams_dir = Path("storage/streams")
 streams_dir.mkdir(parents=True, exist_ok=True)

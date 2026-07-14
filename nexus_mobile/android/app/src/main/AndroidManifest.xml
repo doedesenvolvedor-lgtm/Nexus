@@ -1,0 +1,29 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.nexus.streaming">
+
+    <!-- Internet permission -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Post notifications permission (required for Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Camera permission (optional, if you use video) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Microphone permission (optional) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- File access (optional) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <application
+        android:usesCleartextTraffic="false">
+
+        <!-- Firebase notification channel configuration -->
+        <!-- This is required for Firebase Cloud Messaging -->
+
+    </application>
+
+</manifest>

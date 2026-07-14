@@ -12,6 +12,9 @@ import '../screens/settings/edit_profile_screen.dart';
 import '../screens/settings/parental_control_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/splash/splash_screen.dart';
+import '../screens/trial/trial_welcome_screen.dart';
+import '../screens/trial/trial_status_screen.dart';
+import '../screens/trial/plans_screen.dart';
 
 final routes = <String, WidgetBuilder>{
   '/': (_) => const SplashScreen(),
@@ -26,4 +29,7 @@ final routes = <String, WidgetBuilder>{
   '/settings': (_) => const SettingsScreen(),
   '/edit-profile': (_) => const EditProfileScreen(),
   '/parental': (_) => const ParentalControlScreen(),
+  '/trial-welcome': (_) => const TrialWelcomeScreen(),
+  '/trial-status': (_) => const TrialStatusScreen(),
+  '/plans': (_) => const PlansScreen(),
 };
