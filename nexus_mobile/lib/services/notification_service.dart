@@ -73,9 +73,9 @@ class NotificationService {
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(
-            const AndroidNotificationChannel(
-              id: 'high_importance_channel',
-              name: 'High Importance Notifications',
+            AndroidNotificationChannel(
+              'high_importance_channel',
+              'High Importance Notifications',
               description: 'This channel is used for important notifications.',
               importance: Importance.max,
               enableVibration: true,
@@ -123,10 +123,8 @@ class NotificationService {
 
     // Android 13+
     if (Platform.isAndroid) {
-      final androidImplementation =
-          _localNotifications.resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
-      await androidImplementation?.requestNotificationPermission();
+      // Nota: requestNotificationPermission não está disponível nesta versão
+      // As permissões são gerenciadas através do Firebase Messaging
     }
   }
 
@@ -148,7 +146,6 @@ class NotificationService {
 
   Future<void> _showLocalNotification(RemoteMessage message) async {
     final notification = message.notification;
-    final android = message.android;
 
     if (notification == null) return;
 
@@ -167,9 +164,6 @@ class NotificationService {
             ticker: 'ticker',
             enableVibration: true,
             enableLights: true,
-            largeIcon: android != null
-                ? NetworkImage(android.largeIcon ?? '')
-                : null,
           ),
           iOS: const DarwinNotificationDetails(
             sound: 'default',

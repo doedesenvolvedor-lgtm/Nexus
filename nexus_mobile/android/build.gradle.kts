@@ -1,20 +1,3 @@
-// Root build.gradle.kts (Project level)
-plugins {
-    // Kotlin DSL Plugins
-    kotlin("jvm") version "1.9.21" apply false
-    kotlin("android") version "1.9.21" apply false
-    
-    // Android Gradle Plugin
-    id("com.android.application") version "8.1.4" apply false
-    
-    // Google services Gradle plugin
-    id("com.google.gms.google-services") version "4.4.4" apply false
-    
-    // Firebase Crashlytics Gradle plugin
-    id("com.google.firebase.crashlytics") version "3.0.7" apply false
-}
-
-
 allprojects {
     repositories {
         google()
@@ -22,6 +5,20 @@ allprojects {
     }
 }
 
-tasks.register("clean", Delete::class) {
-    delete(rootProject.buildDir)
+val newBuildDir: Directory =
+    rootProject.layout.buildDirectory
+        .dir("../../build")
+        .get()
+rootProject.layout.buildDirectory.value(newBuildDir)
+
+subprojects {
+    val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
+    project.layout.buildDirectory.value(newSubprojectBuildDir)
+}
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+
+tasks.register<Delete>("clean") {
+    delete(rootProject.layout.buildDirectory)
 }

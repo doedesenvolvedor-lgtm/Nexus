@@ -1,8 +1,10 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Política de Privacidade - Nexus Streaming">
+    <meta name="robots" content="index, follow">
     <title>Política de Privacidade - Nexus Streaming</title>
     <style>
         * {
@@ -12,67 +14,62 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #f5f5f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            color: #fff;
+            line-height: 1.8;
+            padding: 40px 20px;
         }
 
         .container {
             max-width: 900px;
             margin: 0 auto;
-            padding: 40px 20px;
-            background-color: white;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            background: rgba(48, 43, 99, 0.2);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            border-radius: 15px;
+            padding: 50px;
         }
 
         header {
             text-align: center;
-            margin-bottom: 40px;
-            padding-bottom: 20px;
-            border-bottom: 3px solid #007bff;
+            margin-bottom: 50px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.2);
         }
 
-        header h1 {
-            color: #007bff;
+        h1 {
+            font-size: 2.5rem;
             margin-bottom: 10px;
-            font-size: 2.5em;
-        }
-
-        header p {
-            color: #666;
-            font-size: 1.1em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .last-updated {
-            text-align: center;
-            color: #999;
-            margin-bottom: 30px;
-            font-size: 0.9em;
-        }
-
-        section {
-            margin-bottom: 35px;
+            color: #aaa;
+            font-size: 14px;
         }
 
         h2 {
-            color: #007bff;
+            font-size: 1.5rem;
+            margin-top: 35px;
             margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #e0e0e0;
-            font-size: 1.6em;
+            color: #667eea;
+            border-left: 4px solid #667eea;
+            padding-left: 15px;
         }
 
         h3 {
-            color: #333;
+            font-size: 1.1rem;
             margin-top: 20px;
             margin-bottom: 10px;
-            font-size: 1.2em;
+            color: #aaa;
         }
 
         p {
-            margin-bottom: 12px;
-            text-align: justify;
+            margin-bottom: 15px;
+            color: #ddd;
         }
 
         ul, ol {
@@ -82,75 +79,69 @@
 
         li {
             margin-bottom: 8px;
-            text-align: justify;
+            color: #ddd;
+        }
+
+        strong {
+            color: #667eea;
         }
 
         .highlight {
-            background-color: #e3f2fd;
+            background: rgba(102, 126, 234, 0.1);
             padding: 20px;
-            border-left: 4px solid #007bff;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
             margin: 20px 0;
-            border-radius: 4px;
         }
 
-        .highlight strong {
-            color: #0056b3;
+        a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 10px 20px;
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid #667eea;
+            border-radius: 5px;
+            color: #667eea;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .back-link:hover {
+            background: rgba(102, 126, 234, 0.2);
         }
 
         footer {
             text-align: center;
             margin-top: 50px;
-            padding-top: 20px;
-            border-top: 2px solid #e0e0e0;
+            padding-top: 30px;
+            border-top: 1px solid rgba(102, 126, 234, 0.1);
             color: #666;
-            font-size: 0.9em;
-        }
-
-        a {
-            color: #007bff;
-            text-decoration: none;
-        }
-
-        a:hover {
-            text-decoration: underline;
+            font-size: 13px;
         }
 
         @media (max-width: 768px) {
             .container {
-                padding: 20px 15px;
+                padding: 30px 20px;
             }
 
-            header h1 {
-                font-size: 1.8em;
+            h1 {
+                font-size: 1.8rem;
             }
 
             h2 {
-                font-size: 1.3em;
+                font-size: 1.2rem;
             }
-        }
-
-        .toc {
-            background-color: #f9f9f9;
-            padding: 20px;
-            border-radius: 4px;
-            margin-bottom: 30px;
-        }
-
-        .toc h3 {
-            margin-top: 0;
-        }
-
-        .toc ol {
-            margin: 0;
-            margin-left: 20px;
-        }
-
-        .toc li {
-            margin-bottom: 5px;
-        }
-
-        .toc a {
-            color: #007bff;
         }
     </style>
 </head>
@@ -158,211 +149,73 @@
     <div class="container">
         <header>
             <h1>🔒 Política de Privacidade</h1>
-            <p>Nexus Streaming</p>
+            <p class="last-updated">Última atualização: 15 de julho de 2024</p>
         </header>
 
-        <div class="last-updated">
-            <strong>Última atualização:</strong> 14 de julho de 2026
-        </div>
-
-        <div class="highlight">
-            <strong>📋 Introdução:</strong> A Nexus Streaming ("Nexus", "nós" ou "nosso") respeita sua privacidade e está comprometida em proteger seus dados pessoais. Esta Política de Privacidade explica quais informações coletamos, como as utilizamos, compartilhamos e protegemos ao utilizar nosso aplicativo e serviços.
-        </div>
-
-        <div class="toc">
-            <h3>Índice</h3>
-            <ol>
-                <li><a href="#1-coleta">1. Informações que Coletamos</a></li>
-                <li><a href="#2-uso">2. Como Usamos Seus Dados</a></li>
-                <li><a href="#3-compartilhamento">3. Compartilhamento de Informações</a></li>
-                <li><a href="#4-seguranca">4. Segurança</a></li>
-                <li><a href="#5-cookies">5. Cookies e Tecnologias Semelhantes</a></li>
-                <li><a href="#6-direitos">6. Seus Direitos</a></li>
-                <li><a href="#7-retencao">7. Retenção dos Dados</a></li>
-                <li><a href="#8-menores">8. Menores de Idade</a></li>
-                <li><a href="#9-alteracoes">9. Alterações nesta Política</a></li>
-                <li><a href="#10-contato">10. Contato</a></li>
-                <li><a href="#11-lgpd">11. Conformidade com a LGPD</a></li>
-            </ol>
-        </div>
-
-        <section id="1-coleta">
-            <h2>1. Informações que Coletamos</h2>
-            <p>
-                Podemos coletar as seguintes informações:
-            </p>
-
-            <h3>Dados de Cadastro</h3>
-            <ul>
-                <li>Nome</li>
-                <li>E-mail</li>
-                <li>Senha (armazenada de forma criptografada)</li>
-                <li>Data de criação da conta</li>
-            </ul>
-
-            <h3>Dados do Perfil</h3>
-            <ul>
-                <li>Nome do perfil</li>
-                <li>Foto do perfil (caso enviada pelo usuário)</li>
-                <li>Preferências do perfil</li>
-                <li>Idioma</li>
-            </ul>
-
-            <h3>Dados de Uso</h3>
-            <ul>
-                <li>Filmes e séries assistidos</li>
-                <li>Histórico de reprodução</li>
-                <li>Favoritos</li>
-                <li>Minha Lista</li>
-                <li>Tempo assistido</li>
-                <li>Última posição do vídeo ("Continuar assistindo")</li>
-            </ul>
-
-            <h3>Dados do Dispositivo</h3>
-            <ul>
-                <li>Modelo do aparelho</li>
-                <li>Sistema operacional</li>
-                <li>Versão do aplicativo</li>
-                <li>Idioma do dispositivo</li>
-                <li>Token de notificações (Firebase Cloud Messaging)</li>
-            </ul>
-
-            <h3>Dados de Pagamento</h3>
-            <p>
-                Os pagamentos são processados por parceiros de pagamento, como Mercado Pago. A Nexus não armazena dados completos de cartões de crédito.
-            </p>
-        </section>
-
-        <section id="2-uso">
-            <h2>2. Como Usamos Seus Dados</h2>
-            <p>
-                Utilizamos seus dados para:
-            </p>
-            <ul>
-                <li>Criar e gerenciar sua conta.</li>
-                <li>Permitir acesso ao catálogo.</li>
-                <li>Salvar seu progresso de reprodução.</li>
-                <li>Enviar notificações.</li>
-                <li>Melhorar nossos serviços.</li>
-                <li>Oferecer recomendações personalizadas.</li>
-                <li>Cumprir obrigações legais.</li>
-                <li>Prevenir fraudes.</li>
-            </ul>
-        </section>
-
-        <section id="3-compartilhamento">
-            <h2>3. Compartilhamento de Informações</h2>
-            <p>
-                Podemos compartilhar informações apenas com prestadores de serviços necessários para o funcionamento da plataforma, como:
-            </p>
-            <ul>
-                <li>Firebase (notificações, analytics e relatórios de falhas)</li>
-                <li>Mercado Pago (processamento de pagamentos)</li>
-                <li>Hostinger (hospedagem)</li>
-                <li>Bunny CDN (distribuição de conteúdo)</li>
-                <li>Outros fornecedores de infraestrutura quando necessário</li>
-            </ul>
+        <main>
+            <h2>1. Introdução</h2>
+            <p>A Nexus Streaming ("Nós", "Nossa", "Nos" ou "Empresa") respeita a privacidade dos usuários ("Usuário", "Você" ou "Sua") da plataforma Nexus Streaming ("Serviço"). Esta Política de Privacidade explica como coletamos, usamos, divulgamos e protegemos suas informações quando você usa nosso serviço de streaming.</p>
 
             <div class="highlight">
-                <strong>ℹ️ Importante:</strong> Não vendemos seus dados pessoais a terceiros.
+                <strong>Seu direito à privacidade é nossa prioridade.</strong> Nós nos comprometemos a manter a confidencialidade e segurança de seus dados pessoais de acordo com as leis aplicáveis, incluindo a Lei Geral de Proteção de Dados Pessoais (LGPD).
             </div>
-        </section>
 
-        <section id="4-seguranca">
-            <h2>4. Segurança</h2>
-            <p>
-                Adotamos medidas técnicas e organizacionais para proteger suas informações, incluindo:
-            </p>
+            <h2>2. Informações que Coletamos</h2>
+            <h3>2.1 Informações Fornecidas por Você</h3>
             <ul>
-                <li>Criptografia de senhas.</li>
-                <li>Comunicação segura por HTTPS.</li>
-                <li>Tokens de autenticação JWT.</li>
-                <li>Controle de acesso.</li>
-                <li>Monitoramento de segurança.</li>
+                <li><strong>Dados de Conta:</strong> Email, nome de usuário, senha, data de nascimento</li>
+                <li><strong>Dados de Pagamento:</strong> Informações de cartão de crédito, banco, saldo de conta</li>
+                <li><strong>Perfil:</strong> Avatar, preferências de conteúdo, listas de desejos</li>
+                <li><strong>Comunicação:</strong> Mensagens de suporte, feedback, reclamações</li>
             </ul>
-            <p>
-                Apesar disso, nenhum sistema é totalmente imune a riscos.
-            </p>
-        </section>
 
-        <section id="5-cookies">
-            <h2>5. Cookies e Tecnologias Semelhantes</h2>
-            <p>
-                Podemos utilizar cookies e tecnologias equivalentes para:
-            </p>
+            <h3>2.2 Informações Coletadas Automaticamente</h3>
             <ul>
-                <li>Manter sua sessão ativa.</li>
-                <li>Salvar preferências.</li>
-                <li>Melhorar a experiência de uso.</li>
-                <li>Gerar estatísticas de utilização.</li>
+                <li><strong>Dados de Dispositivo:</strong> Tipo de dispositivo, sistema operacional, navegador, endereço IP</li>
+                <li><strong>Dados de Uso:</strong> Conteúdo assistido, tempo de visualização, velocidade de reprodução, histórico de navegação</li>
+                <li><strong>Dados de Localização:</strong> País/região aproximada (não precisa ser precisa)</li>
+                <li><strong>Cookies e Tecnologias Similares:</strong> Identificadores únicos para melhorar sua experiência</li>
             </ul>
-        </section>
 
-        <section id="6-direitos">
-            <h2>6. Seus Direitos</h2>
-            <p>
-                Nos termos da LGPD, você pode solicitar:
-            </p>
+            <h2>3. Segurança de Dados</h2>
+            <p>Implementamos medidas de segurança robustas:</p>
             <ul>
-                <li>Confirmação do tratamento de dados.</li>
-                <li>Acesso aos seus dados.</li>
-                <li>Correção de informações.</li>
-                <li>Exclusão da conta e dos dados, quando aplicável.</li>
-                <li>Portabilidade dos dados.</li>
-                <li>Revogação do consentimento, quando o tratamento depender dele.</li>
+                <li>🔒 Criptografia SSL/TLS para todas as conexões</li>
+                <li>🔐 Senhas criptografadas com hash bcrypt</li>
+                <li>🛡️ Firewall e sistemas de proteção contra ataques</li>
+                <li>🔑 Autenticação de dois fatores (2FA) opcional</li>
+                <li>📊 Auditorias de segurança regulares</li>
+                <li>🚨 Monitoramento contínuo de atividades suspeitas</li>
             </ul>
-        </section>
 
-        <section id="7-retencao">
-            <h2>7. Retenção dos Dados</h2>
-            <p>
-                Seus dados serão mantidos enquanto sua conta permanecer ativa ou pelo período necessário para cumprir obrigações legais e regulatórias.
-            </p>
-            <p>
-                Após a exclusão da conta, determinadas informações poderão ser mantidas pelo prazo exigido pela legislação.
-            </p>
-        </section>
-
-        <section id="8-menores">
-            <h2>8. Menores de Idade</h2>
-            <p>
-                Perfis infantis devem ser utilizados sob supervisão de um responsável legal.
-            </p>
-        </section>
-
-        <section id="9-alteracoes">
-            <h2>9. Alterações nesta Política</h2>
-            <p>
-                Podemos atualizar esta Política de Privacidade periodicamente. A versão mais recente estará sempre disponível no aplicativo e em nosso site.
-            </p>
-        </section>
-
-        <section id="10-contato">
-            <h2>10. Contato</h2>
-            <p>
-                Em caso de dúvidas sobre esta Política de Privacidade ou sobre o tratamento dos seus dados, entre em contato:
-            </p>
+            <h2>4. Seus Direitos</h2>
+            <p>Conforme a LGPD, você tem direito a:</p>
             <ul>
-                <li><strong>Nexus Streaming</strong></li>
-                <li><strong>E-mail:</strong> <a href="mailto:noreply@nexustwos.com">noreply@nexustwos.com</a></li>
+                <li><strong>Acesso:</strong> Solicitar cópia de seus dados pessoais</li>
+                <li><strong>Retificação:</strong> Corrigir dados imprecisos ou incompletos</li>
+                <li><strong>Exclusão:</strong> Solicitar a exclusão de seus dados (direito ao esquecimento)</li>
+                <li><strong>Portabilidade:</strong> Receber seus dados em formato estruturado</li>
+                <li><strong>Objeção:</strong> Opor-se ao processamento de seus dados</li>
             </ul>
-        </section>
 
-        <section id="11-lgpd">
-            <h2>11. Conformidade com a LGPD</h2>
-            <p>
-                A Nexus Streaming busca atuar em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018), adotando medidas para proteger as informações pessoais dos usuários e respeitar seus direitos previstos na legislação brasileira.
-            </p>
-        </section>
+            <h2>5. Contato</h2>
+            <p>Para exercer seus direitos ou se tiver dúvidas:</p>
+            <div class="highlight">
+                <strong>Email:</strong> privacy@nexusstream.com<br>
+                <strong>Telefone:</strong> +55 (11) 9999-9999<br>
+                <strong>Responsável pela Privacidade:</strong> Data Protection Officer (DPO)
+            </div>
 
-        <footer>
-            <p>&copy; 2026 Nexus Streaming. Todos os direitos reservados.</p>
-            <p>
-                <a href="https://nexusstream.com">Página Principal</a> | 
-                <a href="https://terms.nexusstream.com">Termos de Uso</a> | 
-                <a href="https://privacy.nexusstream.com">Política de Privacidade</a>
-            </p>
-        </footer>
+            <h2>6. Lei Aplicável</h2>
+            <p>Esta Política é regida pela Lei Geral de Proteção de Dados Pessoais (LGPD - Lei nº 13.709/2018).</p>
+
+            <footer>
+                <p>&copy; 2024 Nexus Streaming. Todos os direitos reservados.</p>
+                <p><a href="https://nexusstream.com/">Voltar à página inicial</a> | <a href="https://terms.nexusstream.com">Termos de Uso</a></p>
+            </footer>
+
+            <a href="https://nexusstream.com/" class="back-link">← Voltar à Página Inicial</a>
+        </main>
     </div>
 </body>
 </html>

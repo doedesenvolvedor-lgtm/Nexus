@@ -172,7 +172,7 @@ class _PlansScreenState extends State<PlansScreen> {
                   onPressed: () => Navigator.of(context).pop(),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(
-                      color: Colors.white20,
+                      color: Colors.white,
                       width: 2,
                     ),
                     shape: RoundedRectangleBorder(
@@ -250,7 +250,7 @@ class _PlansScreenState extends State<PlansScreen> {
                 ? Colors.purple
                 : isPopular
                     ? Colors.amber
-                    : Colors.white20,
+                    : Colors.white.withOpacity(0.2),
             width: isSelected || isPopular ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(16),

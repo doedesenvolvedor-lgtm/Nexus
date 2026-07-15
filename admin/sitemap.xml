@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:mobile="http://www.mobile.googlebot.com/schemas/mobile/1.0">
+    
+    <!-- Página Principal -->
+    <url>
+        <loc>https://nexusstream.com</loc>
+        <lastmod>2024-07-15T00:00:00Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>1.0</priority>
+    </url>
+    
+    <!-- Páginas Legais -->
+    <url>
+        <loc>https://privacy.nexusstream.com</loc>
+        <lastmod>2024-07-15T00:00:00Z</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <url>
+        <loc>https://terms.nexusstream.com</loc>
+        <lastmod>2024-07-15T00:00:00Z</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <!-- API Documentation -->
+    <url>
+        <loc>https://api.nexusstream.com/docs</loc>
+        <lastmod>2024-07-15T00:00:00Z</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    
+    <!-- Admin Panel (sem indexação) -->
+    <url>
+        <loc>https://admin.nexusstream.com</loc>
+        <lastmod>2024-07-15T00:00:00Z</lastmod>
+        <changefreq>never</changefreq>
+        <priority>0.0</priority>
+    </url>
+    
+</urlset>

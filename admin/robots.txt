@@ -1,0 +1,33 @@
+# Nexus Streaming - Robots.txt
+# Permite que search engines indexem o site
+
+User-agent: *
+Allow: /
+Allow: /privacy
+Allow: /terms
+Allow: /api/docs
+Allow: /api/openapi.json
+
+Disallow: /admin
+Disallow: /admin/
+Disallow: /*.json$
+Disallow: /*?*sort=
+Disallow: /*?*page=*&
+Disallow: /temp/
+Disallow: /cache/
+Disallow: /uploads/
+
+# Bot específicos
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# Crawl-delay para bots agressivos
+User-agent: *
+Crawl-delay: 1
+
+# Sitemap
+Sitemap: https://nexusstream.com/sitemap.xml
+Sitemap: https://api.nexusstream.com/api/sitemap.xml

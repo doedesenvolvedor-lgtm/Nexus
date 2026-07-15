@@ -1,5 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 class TrialNotificationService {
   static final _notifications = FlutterLocalNotificationsPlugin();
@@ -26,9 +27,9 @@ class TrialNotificationService {
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(
-          const AndroidNotificationChannel(
-            id: _channelId,
-            name: _channelName,
+          AndroidNotificationChannel(
+            _channelId,
+            _channelName,
             description: 'Notificações sobre o período de trial',
             importance: Importance.high,
           ),
@@ -45,11 +46,12 @@ class TrialNotificationService {
     if (DateTime.now().isBefore(day2Notification)) {
       final hasNotified = prefs.getBool('trial_day2_notified') ?? false;
       if (!hasNotified) {
+        final tzDay2 = tz.TZDateTime.from(day2Notification, tz.local);
         await _notifications.zonedSchedule(
           1,
           '🎬 Seu trial termina amanhã!',
           'Aproveite o último dia de acesso Premium ao Nexus.',
-          day2Notification,
+          tzDay2,
           const NotificationDetails(
             android: AndroidNotificationDetails(
               _channelId,
@@ -68,7 +70,7 @@ class TrialNotificationService {
           androidAllowWhileIdle: true,
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
-          matchDateTimeComponents: DateTimeComponents.dayTime,
+          matchDateTimeComponents: DateTimeComponents.dateAndTime,
         );
         await prefs.setBool('trial_day2_notified', true);
       }
@@ -79,11 +81,12 @@ class TrialNotificationService {
     if (DateTime.now().isBefore(lastDayNotification)) {
       final hasNotified = prefs.getBool('trial_lastday_notified') ?? false;
       if (!hasNotified) {
+        final tzLastDay = tz.TZDateTime.from(lastDayNotification, tz.local);
         await _notifications.zonedSchedule(
           2,
           '⏰ Seu trial termina hoje às ${trialEndsAt.hour}:${trialEndsAt.minute.toString().padLeft(2, '0')}',
           'Escolha um plano para continuar assistindo seus favoritos.',
-          lastDayNotification,
+          tzLastDay,
           const NotificationDetails(
             android: AndroidNotificationDetails(
               _channelId,
@@ -102,7 +105,7 @@ class TrialNotificationService {
           androidAllowWhileIdle: true,
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
-          matchDateTimeComponents: DateTimeComponents.dayTime,
+          matchDateTimeComponents: DateTimeComponents.dateAndTime,
         );
         await prefs.setBool('trial_lastday_notified', true);
       }
@@ -112,11 +115,12 @@ class TrialNotificationService {
     if (DateTime.now().isBefore(trialEndsAt)) {
       final hasNotified = prefs.getBool('trial_expired_notified') ?? false;
       if (!hasNotified) {
+        final tzTrialEnd = tz.TZDateTime.from(trialEndsAt, tz.local);
         await _notifications.zonedSchedule(
           3,
           '😢 Seu trial expirou',
           'Escolha um plano para continuar assistindo.',
-          trialEndsAt,
+          tzTrialEnd,
           const NotificationDetails(
             android: AndroidNotificationDetails(
               _channelId,
@@ -135,7 +139,7 @@ class TrialNotificationService {
           androidAllowWhileIdle: true,
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
-          matchDateTimeComponents: DateTimeComponents.dayTime,
+          matchDateTimeComponents: DateTimeComponents.dateAndTime,
         );
         await prefs.setBool('trial_expired_notified', true);
       }

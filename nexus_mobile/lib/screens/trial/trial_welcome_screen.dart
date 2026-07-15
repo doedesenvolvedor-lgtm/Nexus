@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/trial_provider.dart';
-import '../providers/auth_provider.dart';
+import '../../providers/trial_provider.dart';
+import '../../providers/auth_provider.dart';
 
 class TrialWelcomeScreen extends StatefulWidget {
   const TrialWelcomeScreen({Key? key}) : super(key: key);
@@ -144,7 +144,7 @@ class _TrialWelcomeScreenState extends State<TrialWelcomeScreen> {
                           color: Colors.white10,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.white20,
+                            color: Colors.white.withOpacity(0.2),
                           ),
                         ),
                         child: Column(

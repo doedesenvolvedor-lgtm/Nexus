@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
-import '../providers/trial_provider.dart';
-import '../services/trial_notification_service.dart';
+import '../../providers/trial_provider.dart';
+import '../../services/trial_notification_service.dart';
 
 class TrialStatusScreen extends StatefulWidget {
   const TrialStatusScreen({Key? key}) : super(key: key);
@@ -20,7 +20,9 @@ class _TrialStatusScreenState extends State<TrialStatusScreen> {
   @override
   void initState() {
     super.initState();
-    _startCountdown();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startCountdown();
+    });
   }
 
   @override
@@ -31,6 +33,7 @@ class _TrialStatusScreenState extends State<TrialStatusScreen> {
 
   void _startCountdown() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
       final trialProvider = context.read<TrialProvider>();
       if (trialProvider.trialEndsAt != null) {
         final now = DateTime.now();
@@ -160,7 +163,7 @@ class _TrialStatusScreenState extends State<TrialStatusScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white10,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white20),
+                      border: Border.all(color: Colors.white.withOpacity(0.2)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -266,7 +269,7 @@ class _TrialStatusScreenState extends State<TrialStatusScreen> {
     );
   }
 
-  Future<void> _upgradePlan(TrialProvider provider, String plan) async {
+  Future<void> _upgradePlan(dynamic provider, String plan) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -414,11 +417,11 @@ class _PlanCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           border: Border.all(
-            color: isPopular ? Colors.purple : Colors.white20,
+            color: isPopular ? Colors.purple : Colors.white.withOpacity(0.2),
             width: isPopular ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
-          color: isPopular ? Colors.purple.withOpacity(0.2) : Colors.white5,
+          color: isPopular ? Colors.purple.withOpacity(0.2) : Colors.white.withOpacity(0.05),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
