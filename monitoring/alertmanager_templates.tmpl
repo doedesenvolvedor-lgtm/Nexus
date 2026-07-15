@@ -1,0 +1,121 @@
+{{ define "slack.default.title" -}}
+[{{ .Status | toUpper -}}
+{{ if eq .Status "firing" }}🔴{{ else }}🟢{{ end }}
+] {{ .GroupLabels.alertname }}
+{{- end }}
+
+{{ define "slack.default.text" -}}
+{{ range .Alerts -}}
+*Alert:* {{ .Labels.alertname }} - `{{ .Labels.severity }}`
+*Instance:* {{ .Labels.instance }}
+*Description:* {{ .Annotations.description }}
+*Details:*
+{{ range .Labels.SortedPairs -}}
+• *{{ .Name }}:* `{{ .Value }}`
+{{ end }}
+{{ if .Annotations.runbook_url }}*Runbook:* <{{ .Annotations.runbook_url }}|View>{{ end }}
+{{ end }}
+{{- end }}
+
+{{ define "email.default.subject" -}}
+[{{ .GroupLabels.severity | toUpper }}] {{ .GroupLabels.alertname }} - {{ .Alerts.Firing | len }} disparo(s)
+{{- end }}
+
+{{ define "email.default.text" -}}
+Alertas do Nexus Streaming
+
+{{ range .Alerts.Firing -}}
+═══════════════════════════════════════════════════════════
+ALERTA: {{ .Labels.alertname }}
+Severidade: {{ .Labels.severity | toUpper }}
+Status: DISPARADO 🔴
+
+Resumo: {{ .Annotations.summary }}
+Descrição: {{ .Annotations.description }}
+
+Rótulos:
+{{ range .Labels.SortedPairs -}}
+  • {{ .Name }}: {{ .Value }}
+{{ end }}
+
+Anotações:
+{{ range .Annotations.SortedPairs -}}
+  • {{ .Name }}: {{ .Value }}
+{{ end }}
+
+Horário: {{ .StartsAt.Format "02/01/2006 15:04:05" }}
+{{ end }}
+
+{{ range .Alerts.Resolved -}}
+═══════════════════════════════════════════════════════════
+ALERTA RESOLVIDO: {{ .Labels.alertname }}
+Status: RESOLVIDO 🟢
+
+Descrição: {{ .Annotations.description }}
+
+Resolvido em: {{ .EndsAt.Format "02/01/2006 15:04:05" }}
+Duração: {{ .StartsAt.Time | since }} de erro
+{{ end }}
+
+═══════════════════════════════════════════════════════════
+{{ end }}
+
+{{ define "telegram.default.message" -}}
+{{ if eq .Status "firing" }}
+🚨 <b>ALERTA NEXUS STREAMING</b> 🚨
+{{ else }}
+✅ <b>ALERTA RESOLVIDO</b>
+{{ end }}
+
+{{ range .Alerts -}}
+<b>{{ .Labels.alertname }}</b>
+Severidade: <code>{{ .Labels.severity }}</code>
+{{ if .Labels.instance }}Instance: <code>{{ .Labels.instance }}</code>{{ end }}
+
+{{ .Annotations.summary }}
+<i>{{ .Annotations.description }}</i>
+
+{{ if .Annotations.runbook_url }}<a href="{{ .Annotations.runbook_url }}">📖 Ver Runbook</a>{{ end }}
+
+─────────────────────────────────────────
+{{ end }}
+{{- end }}
+
+{{ define "discord.default.message" -}}
+{
+  "content": "{{ if eq .Status "firing" }}🔴 ALERTA CRÍTICO{{ else }}🟢 ALERTA RESOLVIDO{{ end }}",
+  "embeds": [
+    {
+      "title": "{{ .GroupLabels.alertname }}",
+      "color": {{ if eq .Status "firing" }}16711680{{ else }}65280{{ end }},
+      "fields": [
+        {
+          "name": "Severidade",
+          "value": "{{ .GroupLabels.severity }}",
+          "inline": true
+        },
+        {
+          "name": "Cluster",
+          "value": "{{ .GroupLabels.cluster }}",
+          "inline": true
+        },
+        {
+          "name": "Status",
+          "value": "{{ .Status | toUpper }}",
+          "inline": false
+        },
+        {
+          "name": "Resumo",
+          "value": "{{ (index .Alerts 0).Annotations.summary }}",
+          "inline": false
+        },
+        {
+          "name": "Descrição",
+          "value": "{{ (index .Alerts 0).Annotations.description }}",
+          "inline": false
+        }
+      ]
+    }
+  ]
+}
+{{- end }}

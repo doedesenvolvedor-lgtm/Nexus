@@ -1,0 +1,209 @@
+groups:
+  - name: system_alerts
+    interval: 30s
+    rules:
+      # CPU
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CPU alta em {{ $labels.instance }}"
+          description: "CPU acima de 90% por 5 minutos. Uso atual: {{ $value | humanize }}%"
+
+      # Memória
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Memória alta em {{ $labels.instance }}"
+          description: "Memória acima de 85% por 5 minutos. Uso atual: {{ $value | humanize }}%"
+
+      # Disco
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs"} / node_filesystem_size_bytes) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Espaço em disco baixo em {{ $labels.instance }}"
+          description: "Espaço livre menor que 10% em {{ $labels.device }}. Espaço disponível: {{ $value | humanize }}%"
+
+      # Inodes
+      - alert: LowInodeSpace
+        expr: (node_filesystem_files_free{fstype!~"tmpfs"} / node_filesystem_files) * 100 < 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Inodes baixos em {{ $labels.instance }}"
+          description: "Inodes livres menor que 5% em {{ $labels.device }}"
+
+  - name: database_alerts
+    interval: 30s
+    rules:
+      # PostgreSQL Connection
+      - alert: PostgreSQLNotResponding
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL não está respondendo"
+          description: "O servidor PostgreSQL está inativo ou inacessível"
+
+      # PostgreSQL Connections
+      - alert: PostgreSQLHighConnections
+        expr: pg_stat_activity_count > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alto número de conexões PostgreSQL"
+          description: "Conexões ativas: {{ $value }}"
+
+      # PostgreSQL Transactions
+      - alert: PostgreSQLTransactionTimeoutRisk
+        expr: pg_stat_activity_max_duration_seconds > 3600
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Transação PostgreSQL de longa duração detectada"
+          description: "Transação em execução por {{ $value | humanizeDuration }}"
+
+  - name: redis_alerts
+    interval: 30s
+    rules:
+      # Redis Connection
+      - alert: RedisNotResponding
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis não está respondendo"
+          description: "O servidor Redis está inativo ou inacessível"
+
+      # Redis Memory
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Uso de memória Redis acima de 85%"
+          description: "Memória usada: {{ $value | humanizePercentage }}"
+
+      # Redis Evictions
+      - alert: RedisEvictionsOccurring
+        expr: increase(redis_evicted_keys_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis está removendo chaves devido a limite de memória"
+          description: "Evictions nos últimos 5 minutos: {{ $value }}"
+
+  - name: api_alerts
+    interval: 30s
+    rules:
+      # API Indisponível
+      - alert: APIIsDown
+        expr: up{job="backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API FastAPI está inativa"
+          description: "A API não está respondendo há 2 minutos"
+
+      # Taxa de erro alta
+      - alert: HighErrorRate
+        expr: |
+          (sum(rate(http_requests_total{status_code=~"5.."}[5m])) /
+           sum(rate(http_requests_total[5m]))) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Taxa de erro alta na API"
+          description: "{{ $value | humanize }}% das requisições resultando em erro"
+
+      # Resposta lenta
+      - alert: SlowAPIResponse
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tempo de resposta da API alto"
+          description: "P95 do tempo de resposta: {{ $value | humanizeDuration }}"
+
+      # Muitas requisições
+      - alert: HighRequestRate
+        expr: sum(rate(http_requests_total[1m])) > 1000
+        for: 5m
+        labels:
+          severity: info
+        annotations:
+          summary: "Taxa alta de requisições"
+          description: "{{ $value | humanize }} requisições por segundo"
+
+  - name: payment_alerts
+    interval: 60s
+    rules:
+      # Falhas de pagamento
+      - alert: HighPaymentFailureRate
+        expr: |
+          (sum(rate(payment_attempts_total{status="failed"}[10m])) /
+           sum(rate(payment_attempts_total[10m]))) * 100 > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Taxa de falha de pagamentos alta"
+          description: "{{ $value | humanize }}% das tentativas de pagamento falhando"
+
+  - name: docker_alerts
+    interval: 30s
+    rules:
+      # Container parado
+      - alert: ContainerStopped
+        expr: container_last_seen < time() - 300
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container parado: {{ $labels.name }}"
+          description: "Container não foi visto nos últimos 5 minutos"
+
+  - name: custom_business_alerts
+    interval: 60s
+    rules:
+      # Muitas importações falhando
+      - alert: MediaImportFailures
+        expr: |
+          (sum(rate(media_imports_total{status="failed"}[30m])) /
+           sum(rate(media_imports_total[30m]))) * 100 > 20
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alta taxa de falha em importações de mídia"
+          description: "{{ $value | humanize }}% das importações falhando"
+
+      # Sincronização TMDb falhando
+      - alert: TMDBSyncFailures
+        expr: |
+          (sum(rate(tmdb_sync_operations_total{status="failed"}[30m])) /
+           sum(rate(tmdb_sync_operations_total[30m]))) * 100 > 30
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Problemas na sincronização com TMDb"
+          description: "{{ $value | humanize }}% das sincronizações falhando"

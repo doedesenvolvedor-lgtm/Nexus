@@ -1,0 +1,147 @@
+global:
+  resolve_timeout: 5m
+  # Configurações de SMTP para e-mail
+  smtp_smarthost: 'smtp.mailgun.org:587'
+  smtp_auth_username: 'postmaster@your-domain.com'  # Substitua com seu e-mail
+  smtp_auth_password: 'your-mailgun-password'  # Substitua com sua senha
+  smtp_from: 'alerts@nexus-streaming.com'
+  slack_api_url: 'YOUR_SLACK_WEBHOOK_URL'  # Substitua com sua URL do Slack
+
+# Templates para as mensagens
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Roteador de alertas
+route:
+  # Receptor padrão
+  receiver: 'email'
+  
+  # Tempo de espera antes de reenviar
+  repeat_interval: 4h
+  
+  # Agrupamento de alertas
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  
+  # Subrotas para diferentes tipos de alertas
+  routes:
+    # Alertas críticos
+    - match:
+        severity: critical
+      receiver: 'critical'
+      repeat_interval: 1h
+      group_wait: 10s
+      group_interval: 1m
+      routes:
+        - match:
+            alertname: PostgreSQLNotResponding
+          receiver: 'critical_db'
+        - match:
+            alertname: RedisNotResponding
+          receiver: 'critical_cache'
+        - match:
+            alertname: APIIsDown
+          receiver: 'critical_api'
+
+    # Alertas de warning
+    - match:
+        severity: warning
+      receiver: 'warning'
+      repeat_interval: 2h
+
+    # Alertas informativos
+    - match:
+        severity: info
+      receiver: 'info'
+      repeat_interval: 12h
+
+# Receptores (destinos de notificação)
+receivers:
+  # Email para alertas críticos
+  - name: 'critical'
+    email_configs:
+      - to: 'critical-alerts@your-domain.com'
+        headers:
+          Subject: '[CRÍTICO] Alerta Nexus: {{ .GroupLabels.alertname }}'
+    slack_configs:
+      - channel: '#critical-alerts'
+        title: 'ALERTA CRÍTICO'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}\n{{ .Annotations.description }}\n{{ end }}'
+        send_resolved: true
+        color: 'danger'
+    telegram_configs:
+      - chat_id: YOUR_TELEGRAM_CHAT_ID
+        parse_mode: HTML
+        message: |
+          🚨 <b>ALERTA CRÍTICO</b>
+          {{ range .Alerts }}
+          <b>{{ .Labels.alertname }}</b>
+          {{ .Annotations.summary }}
+          {{ .Annotations.description }}
+          {{ end }}
+
+  # Email para alertas críticos de banco de dados
+  - name: 'critical_db'
+    email_configs:
+      - to: 'db-alerts@your-domain.com'
+        headers:
+          Subject: '[CRÍTICO] Problema no Banco de Dados: {{ .GroupLabels.alertname }}'
+    slack_configs:
+      - channel: '#db-alerts'
+
+  # Email para alertas críticos de cache
+  - name: 'critical_cache'
+    email_configs:
+      - to: 'cache-alerts@your-domain.com'
+        headers:
+          Subject: '[CRÍTICO] Problema no Cache Redis: {{ .GroupLabels.alertname }}'
+    slack_configs:
+      - channel: '#cache-alerts'
+
+  # Email para alertas críticos de API
+  - name: 'critical_api'
+    email_configs:
+      - to: 'api-alerts@your-domain.com'
+        headers:
+          Subject: '[CRÍTICO] API Indisponível: {{ .GroupLabels.alertname }}'
+    slack_configs:
+      - channel: '#api-alerts'
+
+  # Alertas de warning
+  - name: 'warning'
+    email_configs:
+      - to: 'ops-team@your-domain.com'
+        headers:
+          Subject: '[WARNING] Alerta Nexus: {{ .GroupLabels.alertname }}'
+    slack_configs:
+      - channel: '#warnings'
+        color: 'warning'
+
+  # Alertas informativos
+  - name: 'info'
+    slack_configs:
+      - channel: '#info-alerts'
+        color: 'good'
+
+# Supressão de alertas (optional)
+inhibit_rules:
+  # Não enviar warning se crítico já está ativo
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'dev', 'instance']
+
+  # Não enviar info se crítico ou warning já está ativo
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'info'
+    equal: ['alertname', 'dev', 'instance']
+
+  - source_match:
+      severity: 'warning'
+    target_match:
+      severity: 'info'
+    equal: ['alertname', 'dev', 'instance']

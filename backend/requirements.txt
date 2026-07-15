@@ -15,3 +15,5 @@ aiofiles
 requests
 httpx
 firebase-admin
+prometheus-client
+python-json-logger

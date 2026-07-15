@@ -1,19 +1,32 @@
 from pathlib import Path
+import logging
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from prometheus_client import generate_latest
 
 from app.database import Base, engine
+from app.logging_config import setup_logging
+from app.metrics import PrometheusMiddleware
 from app.routers import admin, auth, episodes, history, media, notifications, payments, profiles, queue_jobs, ratings, recommendations, subscriptions, subscriptions_trial, watchlist, webhooks
+
+# Configura logging
+setup_logging()
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Nexus Streaming",
     version="1.0",
 )
 
+# Adiciona middleware de métricas
+app.add_middleware(PrometheusMiddleware)
+
 try:
     Base.metadata.create_all(bind=engine)
+    logger.info("Database tables initialized successfully")
 except Exception as exc:  # pragma: no cover - defensive for local/dev environments
+    logger.error(f"Warning: could not initialize database tables: {exc}")
     print(f"Warning: could not initialize database tables: {exc}")
 
 app.include_router(auth.router, prefix="/auth")
@@ -39,6 +52,7 @@ app.mount("/streams", StaticFiles(directory=str(streams_dir)), name="streams")
 
 @app.get("/")
 def root():
+    logger.info("Root endpoint accessed")
     return {
         "platform": "Nexus Streaming",
         "status": "online",
@@ -48,4 +62,12 @@ def root():
 
 @app.get("/health")
 def health():
+    logger.debug("Health check performed")
     return {"status": "healthy"}
+
+
+@app.get("/metrics")
+def metrics():
+    """Endpoint para Prometheus coletar métricas."""
+    logger.debug("Metrics endpoint accessed")
+    return generate_latest()
