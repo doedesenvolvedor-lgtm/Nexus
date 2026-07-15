@@ -7,7 +7,9 @@ import '../utils/constants.dart';
 
 class SearchService {
   Future<List<Media>> search(String text) async {
-    final response = await http.get(Uri.parse('$apiUrl/media/search?q=$text'));
+    final response = await http.get(
+      Uri.parse('$apiUrl/media/search').replace(queryParameters: {'q': text}),
+    );
 
     if (response.statusCode != 200) {
       return [];
@@ -22,7 +24,9 @@ class SearchService {
   }
 
   Future<List<Media>> recommendations(String emotion) async {
-    final response = await http.get(Uri.parse('$apiUrl/media/ai-search?emotion=$emotion'));
+    final response = await http.get(
+      Uri.parse('$apiUrl/media/ai-search').replace(queryParameters: {'emotion': emotion}),
+    );
 
     if (response.statusCode != 200) {
       return [];

@@ -3,17 +3,17 @@ import 'package:provider/provider.dart';
 import '../providers/trial_provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/trial_notification_service.dart';
-import 'trial_welcome_screen.dart';
+import '../screens/trial/trial_welcome_screen.dart';
 
 class TrialCheck extends StatefulWidget {
   final Widget child;
   final bool showWelcomeOnFirstTrial;
 
   const TrialCheck({
-    Key? key,
+    super.key,
     required this.child,
     this.showWelcomeOnFirstTrial = true,
-  }) : super(key: key);
+  });
 
   @override
   State<TrialCheck> createState() => _TrialCheckState();
@@ -54,6 +54,10 @@ class _TrialCheckState extends State<TrialCheck> {
       }
     }
 
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
       _firstCheckDone = true;
     });
@@ -62,16 +66,16 @@ class _TrialCheckState extends State<TrialCheck> {
   @override
   Widget build(BuildContext context) {
     if (!_firstCheckDone) {
-      return Scaffold(
+      return const Scaffold(
         backgroundColor: Colors.black87,
-        body: const Center(
+        body: Center(
           child: CircularProgressIndicator(),
         ),
       );
     }
 
     if (_showWelcome) {
-      return TrialWelcomeScreen();
+      return const TrialWelcomeScreen();
     }
 
     return widget.child;

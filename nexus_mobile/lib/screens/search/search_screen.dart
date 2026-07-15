@@ -16,20 +16,36 @@ class _SearchScreenState extends State<SearchScreen> {
   final controller = TextEditingController();
   List<Media> results = [];
   bool loading = false;
+  String? errorMessage;
 
   Future<void> _search(String text) async {
     if (text.trim().isEmpty) {
-      setState(() => results = []);
+      setState(() {
+        results = [];
+        errorMessage = null;
+      });
       return;
     }
 
-    setState(() => loading = true);
-    final items = await searchService.search(text);
-    if (!mounted) return;
     setState(() {
-      results = items;
-      loading = false;
+      loading = true;
+      errorMessage = null;
     });
+
+    try {
+      final items = await searchService.search(text);
+      if (!mounted) return;
+      setState(() {
+        results = items;
+        loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        loading = false;
+        errorMessage = 'Falha ao pesquisar. Tente novamente.';
+      });
+    }
   }
 
   @override
@@ -51,8 +67,15 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             const SizedBox(height: 16),
             if (loading) const CircularProgressIndicator(),
-            if (!loading && results.isEmpty && controller.text.isNotEmpty)
+            if (!loading && errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(errorMessage!),
+              ),
+            if (!loading && errorMessage == null && results.isEmpty && controller.text.isNotEmpty)
               const Text('Nenhum resultado encontrado'),
+            if (!loading && errorMessage == null && controller.text.isEmpty)
+              const Text('Digite para buscar filmes e séries.'),
             Expanded(
               child: ListView.builder(
                 itemCount: results.length,

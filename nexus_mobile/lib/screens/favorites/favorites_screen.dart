@@ -13,7 +13,24 @@ class FavoritesScreen extends StatelessWidget {
       body: Consumer<FavoritesProvider>(
         builder: (context, favoritesProvider, _) {
           if (favoritesProvider.favorites.isEmpty) {
-            return const Center(child: Text('Lista de favoritos'));
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.favorite_border, size: 48),
+                    const SizedBox(height: 12),
+                    const Text('Você ainda não adicionou favoritos.'),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pushNamed(context, '/home'),
+                      child: const Text('Explorar catálogo'),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
 
           return ListView.builder(

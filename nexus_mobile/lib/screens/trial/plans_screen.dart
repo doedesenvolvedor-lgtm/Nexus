@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/trial_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/mercadopago_provider.dart';
 
 class PlansScreen extends StatefulWidget {
-  const PlansScreen({Key? key}) : super(key: key);
+  const PlansScreen({super.key});
 
   @override
   State<PlansScreen> createState() => _PlansScreenState();
@@ -196,10 +195,10 @@ class _PlansScreenState extends State<PlansScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  color: Colors.blue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Colors.blue.withOpacity(0.3),
+                    color: Colors.blue.withValues(alpha: 0.3),
                   ),
                 ),
                 child: const Row(
@@ -250,17 +249,17 @@ class _PlansScreenState extends State<PlansScreen> {
                 ? Colors.purple
                 : isPopular
                     ? Colors.amber
-                    : Colors.white.withOpacity(0.2),
+                    : Colors.white.withValues(alpha: 0.2),
             width: isSelected || isPopular ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(16),
           color: isSelected
-              ? Colors.purple.withOpacity(0.2)
-              : Colors.white.withOpacity(0.05),
+              ? Colors.purple.withValues(alpha: 0.2)
+              : Colors.white.withValues(alpha: 0.05),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.purple.withOpacity(0.3),
+                    color: Colors.purple.withValues(alpha: 0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 5),
                   ),
@@ -305,12 +304,15 @@ class _PlansScreenState extends State<PlansScreen> {
                       ),
                   ],
                 ),
+                // ignore: deprecated_member_use
                 Radio<String>(
                   value: name,
+                  // ignore: deprecated_member_use
                   groupValue: _selectedPlan,
+                  // ignore: deprecated_member_use
                   onChanged: (value) => onSelect(),
                   activeColor: Colors.purple,
-                  fillColor: MaterialStateProperty.all(Colors.purple),
+                  fillColor: WidgetStateProperty.all(Colors.purple),
                 ),
               ],
             ),
@@ -368,7 +370,7 @@ class _PlansScreenState extends State<PlansScreen> {
                   ],
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
@@ -411,11 +413,13 @@ class _PlansScreenState extends State<PlansScreen> {
   Future<void> _processPayment() async {
     if (_selectedPlan == null || _selectedPlan == 'Free') return;
 
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     final authProvider = context.read<AuthProvider>();
     final mpProvider = context.read<MercadoPagoProvider>();
     
     if (authProvider.token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Erro: Token de autenticação não encontrado'),
           backgroundColor: Colors.red,
@@ -459,22 +463,23 @@ class _PlansScreenState extends State<PlansScreen> {
 
       if (!mounted) return;
       
-      Navigator.of(context).pop(); // Fechar loading
+      navigator.pop(); // Fechar loading
 
       if (paymentUrl != null) {
         // Abrir URL de pagamento do MercadoPago
         final success = await mpProvider.openPayment();
+        if (!mounted) return;
         
         if (success) {
           // Pagamento iniciado, aguardar callback
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
             SnackBar(
               content: Text('Abrindo pagamento para o plano $_selectedPlan...'),
               backgroundColor: Colors.orange,
             ),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
             const SnackBar(
               content: Text('Erro ao abrir pagamento'),
               backgroundColor: Colors.red,
@@ -482,7 +487,7 @@ class _PlansScreenState extends State<PlansScreen> {
           );
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text('Erro: ${mpProvider.error}'),
             backgroundColor: Colors.red,
@@ -491,9 +496,9 @@ class _PlansScreenState extends State<PlansScreen> {
       }
     } catch (e) {
       if (mounted) {
-        Navigator.of(context).pop(); // Fechar loading
+        navigator.pop(); // Fechar loading
         
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text('Erro: $e'),
             backgroundColor: Colors.red,

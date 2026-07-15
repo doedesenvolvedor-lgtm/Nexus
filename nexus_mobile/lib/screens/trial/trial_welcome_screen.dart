@@ -4,7 +4,7 @@ import '../../providers/trial_provider.dart';
 import '../../providers/auth_provider.dart';
 
 class TrialWelcomeScreen extends StatefulWidget {
-  const TrialWelcomeScreen({Key? key}) : super(key: key);
+  const TrialWelcomeScreen({super.key});
 
   @override
   State<TrialWelcomeScreen> createState() => _TrialWelcomeScreenState();
@@ -106,7 +106,7 @@ class _TrialWelcomeScreenState extends State<TrialWelcomeScreen> {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.amber.withOpacity(0.4),
+                              color: Colors.amber.withValues(alpha: 0.4),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             ),
@@ -144,11 +144,11 @@ class _TrialWelcomeScreenState extends State<TrialWelcomeScreen> {
                           color: Colors.white10,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                           ),
                         ),
-                        child: Column(
-                          children: const [
+                        child: const Column(
+                          children: [
                             _BenefitRow(
                               icon: '✓',
                               text: 'Todos os filmes',

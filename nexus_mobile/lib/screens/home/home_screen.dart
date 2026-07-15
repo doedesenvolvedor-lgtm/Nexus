@@ -19,6 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Media> movies = [];
   List<Media> series = [];
   bool loading = true;
+  String? errorMessage;
 
   @override
   void initState() {
@@ -26,17 +27,93 @@ class _HomeScreenState extends State<HomeScreen> {
     load();
   }
 
-  Future load() async {
-    movies = await service.getMovies();
-    series = await service.getSeries();
-    loading = false;
-    setState(() {});
+  Future<void> load() async {
+    setState(() {
+      loading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final responses = await Future.wait([
+        service.getMovies(),
+        service.getSeries(),
+      ]);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        movies = responses[0];
+        series = responses[1];
+        loading = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        loading = false;
+        errorMessage = 'Não foi possível carregar o catálogo agora.';
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     if (loading) {
       return const Scaffold(body: LoadingWidget());
+    }
+
+    if (errorMessage != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Nexus')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  errorMessage!,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: load,
+                  child: const Text('Tentar novamente'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (movies.isEmpty && series.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Nexus')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Nenhum conteúdo disponível no momento.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: load,
+                  child: const Text('Atualizar'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
 
     return Scaffold(

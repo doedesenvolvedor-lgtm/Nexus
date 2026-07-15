@@ -13,7 +13,7 @@ import '../main.dart';
 /// Callback global para mensagens recebidas quando o app está em background
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  print('Handling a background message: ${message.messageId}');
+  debugPrint('Handling a background message: ${message.messageId}');
 }
 
 class NotificationService {
@@ -58,9 +58,9 @@ class NotificationService {
       _setupCrashlytics();
 
       _isInitialized = true;
-      print('NotificationService inicializado com sucesso');
+      debugPrint('NotificationService inicializado com sucesso');
     } catch (e) {
-      print('Erro ao inicializar NotificationService: $e');
+      debugPrint('Erro ao inicializar NotificationService: $e');
       _crashlytics.recordError(e, StackTrace.current);
     }
   }
@@ -73,7 +73,7 @@ class NotificationService {
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(
-            AndroidNotificationChannel(
+            const AndroidNotificationChannel(
               'high_importance_channel',
               'High Importance Notifications',
               description: 'This channel is used for important notifications.',
@@ -118,7 +118,7 @@ class NotificationService {
         sound: true,
       );
 
-      print('iOS Notification Permission: ${settings.authorizationStatus}');
+      debugPrint('iOS Notification Permission: ${settings.authorizationStatus}');
     }
 
     // Android 13+
@@ -131,14 +131,14 @@ class NotificationService {
   void _setupMessageHandlers() {
     // Mensagens quando o app está em primeiro plano
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('Mensagem recebida em foreground: ${message.notification?.title}');
+      debugPrint('Mensagem recebida em foreground: ${message.notification?.title}');
       _showLocalNotification(message);
       _logNotificationEvent('notification_received_foreground', message);
     });
 
     // Mensagens quando o app é aberto a partir de uma notificação
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('Notificação clicada: ${message.notification?.title}');
+      debugPrint('Notificação clicada: ${message.notification?.title}');
       _handleNotificationClick(message);
       _logNotificationEvent('notification_opened', message);
     });
@@ -154,7 +154,7 @@ class NotificationService {
         notification.hashCode,
         notification.title,
         notification.body,
-        NotificationDetails(
+        const NotificationDetails(
           android: AndroidNotificationDetails(
             'high_importance_channel',
             'High Importance Notifications',
@@ -165,7 +165,7 @@ class NotificationService {
             enableVibration: true,
             enableLights: true,
           ),
-          iOS: const DarwinNotificationDetails(
+          iOS: DarwinNotificationDetails(
             sound: 'default',
             presentSound: true,
             presentAlert: true,
@@ -175,17 +175,17 @@ class NotificationService {
         payload: message.data.toString(),
       );
     } catch (e) {
-      print('Erro ao mostrar notificação local: $e');
+      debugPrint('Erro ao mostrar notificação local: $e');
     }
   }
 
   void _handleNotificationTap(NotificationResponse response) {
-    print('Notificação clicada: ${response.id}');
+    debugPrint('Notificação clicada: ${response.id}');
     // Adicione aqui a lógica para navegar para a tela apropriada
   }
 
   void _handleNotificationClick(RemoteMessage message) {
-    print('Processando clique na notificação: ${message.notification?.title}');
+    debugPrint('Processando clique na notificação: ${message.notification?.title}');
     // Adicione aqui a lógica para navegar com base no conteúdo da mensagem
     final data = message.data;
     if (data.containsKey('screen')) {
@@ -199,11 +199,11 @@ class NotificationService {
       final token = await _firebaseMessaging.getToken();
 
       if (token == null) {
-        print('Falha ao obter device token');
+        debugPrint('Falha ao obter device token');
         return;
       }
 
-      print('Device Token: $token');
+      debugPrint('Device Token: $token');
 
       // Salvar token localmente
       final prefs = await SharedPreferences.getInstance();
@@ -218,13 +218,13 @@ class NotificationService {
 
       // Listener para quando o token é renovado
       _firebaseMessaging.onTokenRefresh.listen((newToken) async {
-        print('Device Token renovado: $newToken');
+        debugPrint('Device Token renovado: $newToken');
         await prefs.setString('device_token', newToken);
         // Enviar novo token para backend
         // await AuthProvider.registerDeviceToken(newToken);
       });
     } catch (e) {
-      print('Erro ao registrar device token: $e');
+      debugPrint('Erro ao registrar device token: $e');
       _crashlytics.recordError(e, StackTrace.current);
     }
   }
@@ -237,9 +237,9 @@ class NotificationService {
       // Definir user ID se disponível
       // await _analytics.setUserId(id: userId);
 
-      print('Firebase Analytics inicializado');
+      debugPrint('Firebase Analytics inicializado');
     } catch (e) {
-      print('Erro ao configurar Analytics: $e');
+      debugPrint('Erro ao configurar Analytics: $e');
     }
   }
 
@@ -256,9 +256,9 @@ class NotificationService {
         return true;
       };
 
-      print('Firebase Crashlytics inicializado');
+      debugPrint('Firebase Crashlytics inicializado');
     } catch (e) {
-      print('Erro ao configurar Crashlytics: $e');
+      debugPrint('Erro ao configurar Crashlytics: $e');
     }
   }
 
@@ -274,7 +274,7 @@ class NotificationService {
         },
       );
     } catch (e) {
-      print('Erro ao logar evento de notificação: $e');
+      debugPrint('Erro ao logar evento de notificação: $e');
     }
   }
 
@@ -288,7 +288,7 @@ class NotificationService {
     try {
       await _analytics.logEvent(name: name, parameters: parameters);
     } catch (e) {
-      print('Erro ao logar evento: $e');
+      debugPrint('Erro ao logar evento: $e');
     }
   }
 
@@ -303,7 +303,7 @@ class NotificationService {
         screenClass: screenClass,
       );
     } catch (e) {
-      print('Erro ao logar screen view: $e');
+      debugPrint('Erro ao logar screen view: $e');
     }
   }
 
@@ -312,7 +312,7 @@ class NotificationService {
     try {
       _crashlytics.recordError(exception, stackTrace ?? StackTrace.current);
     } catch (e) {
-      print('Erro ao registrar exceção: $e');
+      debugPrint('Erro ao registrar exceção: $e');
     }
   }
 
@@ -321,7 +321,7 @@ class NotificationService {
     try {
       _crashlytics.setCustomKey(key, value);
     } catch (e) {
-      print('Erro ao definir custom key: $e');
+      debugPrint('Erro ao definir custom key: $e');
     }
   }
 
@@ -331,7 +331,7 @@ class NotificationService {
       await _analytics.setUserId(id: userId);
       _crashlytics.setUserIdentifier(userId);
     } catch (e) {
-      print('Erro ao definir user ID: $e');
+      debugPrint('Erro ao definir user ID: $e');
     }
   }
 
@@ -343,9 +343,9 @@ class NotificationService {
     try {
       // Esta função deve ser chamada após fazer login
       // e deve usar o seu cliente HTTP para enviar para o backend
-      print('Device token registrado no backend: $deviceToken');
+      debugPrint('Device token registrado no backend: $deviceToken');
     } catch (e) {
-      print('Erro ao registrar device token no backend: $e');
+      debugPrint('Erro ao registrar device token no backend: $e');
       _crashlytics.recordError(e, StackTrace.current);
     }
   }

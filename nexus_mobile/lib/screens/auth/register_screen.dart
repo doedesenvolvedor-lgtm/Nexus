@@ -15,6 +15,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final service = AuthService();
 
   @override
+  void dispose() {
+    email.dispose();
+    password.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Cadastro')),
@@ -35,10 +42,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 30),
             ElevatedButton(
               onPressed: () async {
+                final navigator = Navigator.of(context);
                 final result = await service.register(email.text, password.text);
                 debugPrint(result.toString());
                 if (!mounted) return;
-                Navigator.pushReplacementNamed(context, '/home');
+                navigator.pushReplacementNamed('/home');
               },
               child: const Text('Cadastrar'),
             ),

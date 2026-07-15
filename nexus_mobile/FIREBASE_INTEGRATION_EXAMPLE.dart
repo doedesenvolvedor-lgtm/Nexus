@@ -1,3 +1,5 @@
+// ignore_for_file: dangling_library_doc_comments, file_names
+
 /// Exemplo de como integrar o device token registration no AuthProvider
 /// 
 /// Adicione este código ao seu AuthProvider após um login bem-sucedido:

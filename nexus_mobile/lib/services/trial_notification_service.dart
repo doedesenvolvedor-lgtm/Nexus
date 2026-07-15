@@ -27,7 +27,7 @@ class TrialNotificationService {
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(
-          AndroidNotificationChannel(
+          const AndroidNotificationChannel(
             _channelId,
             _channelName,
             description: 'Notificações sobre o período de trial',
@@ -67,7 +67,7 @@ class TrialNotificationService {
               presentSound: true,
             ),
           ),
-          androidAllowWhileIdle: true,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
           matchDateTimeComponents: DateTimeComponents.dateAndTime,
@@ -102,7 +102,7 @@ class TrialNotificationService {
               presentSound: true,
             ),
           ),
-          androidAllowWhileIdle: true,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
           matchDateTimeComponents: DateTimeComponents.dateAndTime,
@@ -136,7 +136,7 @@ class TrialNotificationService {
               presentSound: true,
             ),
           ),
-          androidAllowWhileIdle: true,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
           matchDateTimeComponents: DateTimeComponents.dateAndTime,

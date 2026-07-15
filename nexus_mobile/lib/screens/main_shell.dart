@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'favorites/favorites_screen.dart';
 import 'home/home_screen.dart';
-import 'notifications/notifications_screen.dart';
-import 'profiles/profile_selection_screen.dart';
 import 'search/search_screen.dart';
 import 'settings/settings_screen.dart';
 

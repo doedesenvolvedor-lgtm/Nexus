@@ -7,10 +7,10 @@ class TrialUpgradeBottomSheet extends StatelessWidget {
   final VoidCallback? onDismiss;
 
   const TrialUpgradeBottomSheet({
-    Key? key,
+    super.key,
     this.onUpgradeTap,
     this.onDismiss,
-  }) : super(key: key);
+  });
 
   static void show(BuildContext context) {
     showModalBottomSheet(
@@ -88,7 +88,7 @@ class TrialUpgradeBottomSheet extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white10,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white20),
+                  border: Border.all(color: const Color(0x33FFFFFF)),
                 ),
                 child: Column(
                   children: [
@@ -196,7 +196,7 @@ class TrialUpgradeBottomSheet extends StatelessWidget {
                   onPressed: onDismiss,
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(
-                      color: Colors.white20,
+                      color: Color(0x33FFFFFF),
                       width: 2,
                     ),
                     shape: RoundedRectangleBorder(

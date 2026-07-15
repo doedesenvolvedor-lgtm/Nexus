@@ -15,6 +15,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final service = AuthService();
 
   @override
+  void dispose() {
+    email.dispose();
+    password.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Login')),
@@ -35,10 +42,11 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 30),
             ElevatedButton(
               onPressed: () async {
+                final navigator = Navigator.of(context);
                 final result = await service.login(email.text, password.text);
                 debugPrint(result.toString());
                 if (!mounted) return;
-                Navigator.pushReplacementNamed(context, '/home');
+                navigator.pushReplacementNamed('/home');
               },
               child: const Text('Entrar'),
             ),

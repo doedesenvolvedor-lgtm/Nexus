@@ -7,9 +7,9 @@ class TrialBanner extends StatefulWidget {
   final VoidCallback? onTap;
 
   const TrialBanner({
-    Key? key,
+    super.key,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   State<TrialBanner> createState() => _TrialBannerState();
@@ -70,7 +70,7 @@ class _TrialBannerState extends State<TrialBanner> {
               borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.purple.withOpacity(0.3),
+                  color: Colors.purple.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
