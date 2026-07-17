@@ -36,3 +36,16 @@ google-services.json
 # Environment files
 .env
 **/.env
+
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Flutter/Dart tool cache
+.dart_tool/
+**/.dart_tool/
