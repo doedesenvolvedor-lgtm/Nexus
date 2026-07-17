@@ -1,0 +1,31 @@
+---
+# ConfigMap com variáveis de ambiente
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: nexus
+data:
+  DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/nexus"
+  REDIS_URL: "redis://redis:6379/0"
+  ALGORITHM: "HS256"
+  ACCESS_TOKEN_EXPIRE_MINUTES: "1440"
+  APP_NAME: "Nexus Streaming"
+  LOG_LEVEL: "INFO"
+
+---
+# Secret com dados sensíveis (ALTERE ANTES DE USAR EM PRODUÇÃO)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backend-secrets
+  namespace: nexus
+type: Opaque
+stringData:
+  SECRET_KEY: "change-me-in-production-use-strong-random-key"
+  MERCADOPAGO_ACCESS_TOKEN: "TEST-YOUR-ACCESS-TOKEN"
+  MERCADOPAGO_CLIENT_ID: "YOUR-CLIENT-ID"
+  MERCADOPAGO_PUBLIC_KEY: "TEST-YOUR-PUBLIC-KEY"
+  SMTP_USER: "noreply@nexus.com"
+  SMTP_PASSWORD: "your-smtp-password"
+  ADMIN_EMAILS: "admin@nexus.com"

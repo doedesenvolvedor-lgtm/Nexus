@@ -3,9 +3,18 @@ kind: Ingress
 metadata:
   name: nexus
   namespace: nexus
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api.nexusstream.com
+      secretName: nexus-tls-cert
   rules:
-    - host: api.nexus.com
+    - host: api.nexusstream.com
       http:
         paths:
           - path: /

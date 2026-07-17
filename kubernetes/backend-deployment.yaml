@@ -3,8 +3,16 @@ kind: Deployment
 metadata:
   name: backend
   namespace: nexus
+  labels:
+    app: backend
+    version: v1
 spec:
   replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: backend
@@ -15,11 +23,51 @@ spec:
     spec:
       containers:
         - name: backend
-          image: nexus/backend:latest
+          image: nexus/backend:v1.0.0  # Use tag específico em produção
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
-          env:
-            - name: DATABASE_URL
-              value: postgresql://postgres:postgres@postgres:5432/nexus
-            - name: REDIS_URL
-              value: redis://redis:6379/0
+              name: http
+              protocol: TCP
+          
+          # Variáveis de ambiente
+          envFrom:
+            - configMapRef:
+                name: backend-config
+            - secretRef:
+                name: backend-secrets
+          
+          # Health checks
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+          
+          # Limites de recursos
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          
+          # Security context
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false

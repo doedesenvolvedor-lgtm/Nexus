@@ -8,6 +8,8 @@ from prometheus_client import generate_latest
 from app.database import Base, engine
 from app.logging_config import setup_logging
 from app.metrics import PrometheusMiddleware
+from app.middleware.stream_auth import StreamAuthMiddleware
+from app.middleware.rate_limit import RateLimitMiddleware
 from app.routers import admin, auth, episodes, history, media, notifications, payments, profiles, queue_jobs, ratings, recommendations, subscriptions, subscriptions_trial, watchlist, webhooks
 
 # Configura logging
@@ -15,12 +17,14 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="Nexus Streaming",
+    title="Nexus Twos",
     version="1.0",
 )
 
-# Adiciona middleware de métricas
-app.add_middleware(PrometheusMiddleware)
+# Adiciona middlewares (última adição = primeira execução)
+app.add_middleware(StreamAuthMiddleware)        # 3º: Valida tokens de stream
+app.add_middleware(RateLimitMiddleware)         # 2º: Verifica rate limits
+app.add_middleware(PrometheusMiddleware)        # 1º: Coleta métricas
 
 try:
     Base.metadata.create_all(bind=engine)
@@ -54,7 +58,7 @@ app.mount("/streams", StaticFiles(directory=str(streams_dir)), name="streams")
 def root():
     logger.info("Root endpoint accessed")
     return {
-        "platform": "Nexus Streaming",
+        "platform": "Nexus Twos",
         "status": "online",
         "version": "1.0",
     }

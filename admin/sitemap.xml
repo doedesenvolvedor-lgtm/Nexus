@@ -5,7 +5,7 @@
     
     <!-- Página Principal -->
     <url>
-        <loc>https://nexusstream.com</loc>
+        <loc>https://nexustwos.com</loc>
         <lastmod>2024-07-15T00:00:00Z</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
@@ -13,14 +13,14 @@
     
     <!-- Páginas Legais -->
     <url>
-        <loc>https://privacy.nexusstream.com</loc>
+        <loc>https://privacypolicy.nexustwos.com</loc>
         <lastmod>2024-07-15T00:00:00Z</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
     
     <url>
-        <loc>https://terms.nexusstream.com</loc>
+        <loc>https://termosdeuso.nexustwos.com</loc>
         <lastmod>2024-07-15T00:00:00Z</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>

@@ -11,7 +11,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(
     os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1440)
 )
 
-APP_NAME = os.getenv("APP_NAME", "Nexus Streaming")
+APP_NAME = os.getenv("APP_NAME", "Nexus Twos")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 FRONTEND_RESET_PASSWORD_URL = os.getenv(
     "FRONTEND_RESET_PASSWORD_URL", f"{FRONTEND_URL}/reset-password"

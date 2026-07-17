@@ -1,4 +1,4 @@
-# Nexus Streaming - Robots.txt
+# Nexus Twos - Robots.txt
 # Permite que search engines indexem o site
 
 User-agent: *
@@ -29,5 +29,5 @@ User-agent: *
 Crawl-delay: 1
 
 # Sitemap
-Sitemap: https://nexusstream.com/sitemap.xml
+Sitemap: https://nexustwos.com/sitemap.xml
 Sitemap: https://api.nexusstream.com/api/sitemap.xml

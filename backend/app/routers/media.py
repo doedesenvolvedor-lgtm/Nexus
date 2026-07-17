@@ -2,10 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import MediaContent
+from app.dependencies import get_current_user
+from app.models import MediaContent, User
 from app.schemas import MediaCreate, MediaResponse
 from app.services.cache_service import build_cache_key, delete_by_prefix, get_json, set_json
 from app.services.media_service import get_catalog, search
+from app.services.stream_token_service import create_stream_token, create_playlist_token
 
 router = APIRouter(tags=["Media"])
 
@@ -117,15 +119,78 @@ def details(id: str, db: Session = Depends(get_db)):
     return payload
 
 
-@router.get("/{id}/play")
-def play(id: str, db: Session = Depends(get_db)):
-    movie = db.query(MediaContent).filter(MediaContent.id == id).first()
-    if movie is None:
+@router.get("/{id}/stream-token")
+def get_stream_token(
+    id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Gera um token JWT para streaming de vídeo.
+    Token com expiração de 60 minutos, vinculado ao usuário e mídia específica.
+    
+    O token deve ser passado na URL: /streams/uuid/master.m3u8?token=<token>
+    """
+    media = db.query(MediaContent).filter(MediaContent.id == id).first()
+    if media is None:
         raise HTTPException(status_code=404, detail="Vídeo não encontrado.")
-
+    
+    # Gerar token com expiração de 60 minutos
+    token = create_stream_token(
+        media_id=id,
+        user_id=current_user.id,
+        expires_in_minutes=60,
+    )
+    
     return {
-        "title": movie.title,
-        "stream": movie.video_url,
-        "thumbnail": movie.thumbnail_url,
-        "banner": movie.banner_url,
+        "token": token,
+        "media_id": id,
+        "expires_in": 3600,  # segundos
+        "token_type": "Bearer",
+    }
+
+
+@router.get("/{id}/play")
+def play(
+    id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Retorna informações de streaming com token JWT.
+    
+    Resposta inclui:
+    - stream: URL master.m3u8 com token
+    - token: JWT para usar em requisições de playlist
+    - expires_in: Tempo de expiração em segundos
+    """
+    media = db.query(MediaContent).filter(MediaContent.id == id).first()
+    if media is None:
+        raise HTTPException(status_code=404, detail="Vídeo não encontrado.")
+    
+    # Gerar token de streaming
+    stream_token = create_stream_token(
+        media_id=id,
+        user_id=current_user.id,
+        expires_in_minutes=60,
+    )
+    
+    # Extrair caminho da playlist do video_url
+    # Ex: /streams/uuid/master.m3u8 → uuid/master.m3u8
+    playlist_path = media.video_url.replace("/streams/", "") if media.video_url else ""
+    
+    # Criar token específico para playlist
+    playlist_token = create_playlist_token(
+        playlist_path=playlist_path,
+        user_id=current_user.id,
+        expires_in_minutes=60,
+    ) if playlist_path else stream_token
+    
+    return {
+        "title": media.title,
+        "stream": f"{media.video_url}?token={playlist_token}",
+        "token": playlist_token,
+        "thumbnail": media.thumbnail_url,
+        "banner": media.banner_url,
+        "expires_in": 3600,  # segundos
     }

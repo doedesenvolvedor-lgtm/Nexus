@@ -1,11 +1,11 @@
 global:
   resolve_timeout: 5m
-  # Configurações de SMTP para e-mail
-  smtp_smarthost: 'smtp.mailgun.org:587'
-  smtp_auth_username: 'postmaster@your-domain.com'  # Substitua com seu e-mail
-  smtp_auth_password: 'your-mailgun-password'  # Substitua com sua senha
-  smtp_from: 'alerts@nexus-streaming.com'
-  slack_api_url: 'YOUR_SLACK_WEBHOOK_URL'  # Substitua com sua URL do Slack
+  # Configurações de SMTP para e-mail (Hostinger)
+  smtp_smarthost: 'smtp.hostinger.com:465'
+  smtp_auth_username: '${SMTP_USER}'  # Via environment variable
+  smtp_auth_password: '${SMTP_PASSWORD}'  # Via environment variable
+  smtp_from: '${SMTP_FROM_EMAIL}'
+  slack_api_url: '${SLACK_WEBHOOK_URL}'  # Via environment variable
 
 # Templates para as mensagens
 templates:
@@ -61,7 +61,7 @@ receivers:
   # Email para alertas críticos
   - name: 'critical'
     email_configs:
-      - to: 'critical-alerts@your-domain.com'
+      - to: '${ADMIN_EMAILS}'
         headers:
           Subject: '[CRÍTICO] Alerta Nexus: {{ .GroupLabels.alertname }}'
     slack_configs:
@@ -71,7 +71,7 @@ receivers:
         send_resolved: true
         color: 'danger'
     telegram_configs:
-      - chat_id: YOUR_TELEGRAM_CHAT_ID
+      - chat_id: '${TELEGRAM_CHAT_ID}'
         parse_mode: HTML
         message: |
           🚨 <b>ALERTA CRÍTICO</b>
@@ -84,7 +84,7 @@ receivers:
   # Email para alertas críticos de banco de dados
   - name: 'critical_db'
     email_configs:
-      - to: 'db-alerts@your-domain.com'
+      - to: '${ADMIN_EMAILS}'
         headers:
           Subject: '[CRÍTICO] Problema no Banco de Dados: {{ .GroupLabels.alertname }}'
     slack_configs:
@@ -93,7 +93,7 @@ receivers:
   # Email para alertas críticos de cache
   - name: 'critical_cache'
     email_configs:
-      - to: 'cache-alerts@your-domain.com'
+      - to: '${ADMIN_EMAILS}'
         headers:
           Subject: '[CRÍTICO] Problema no Cache Redis: {{ .GroupLabels.alertname }}'
     slack_configs:
@@ -102,16 +102,16 @@ receivers:
   # Email para alertas críticos de API
   - name: 'critical_api'
     email_configs:
-      - to: 'api-alerts@your-domain.com'
+      - to: '${ADMIN_EMAILS}'
         headers:
           Subject: '[CRÍTICO] API Indisponível: {{ .GroupLabels.alertname }}'
     slack_configs:
-      - channel: '#api-alerts'
+      - channel: '#critical-alerts'
 
   # Alertas de warning
   - name: 'warning'
     email_configs:
-      - to: 'ops-team@your-domain.com'
+      - to: '${ADMIN_EMAILS}'
         headers:
           Subject: '[WARNING] Alerta Nexus: {{ .GroupLabels.alertname }}'
     slack_configs:
