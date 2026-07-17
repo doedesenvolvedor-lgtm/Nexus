@@ -13,6 +13,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(
 
 APP_NAME = os.getenv("APP_NAME", "Nexus Twos")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+ADMIN_FRONTEND_URL = os.getenv("ADMIN_FRONTEND_URL", "http://localhost:5000")
 FRONTEND_RESET_PASSWORD_URL = os.getenv(
     "FRONTEND_RESET_PASSWORD_URL", f"{FRONTEND_URL}/reset-password"
 )
@@ -28,3 +29,6 @@ SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", APP_NAME)
 # ===== Email Configuration =====
 SMTP_RETRY_ATTEMPTS = int(os.getenv("SMTP_RETRY_ATTEMPTS", 3))
 SMTP_RETRY_DELAY = int(os.getenv("SMTP_RETRY_DELAY", 5))  # segundos
+
+# ===== Webhook Configuration =====
+MERCADOPAGO_WEBHOOK_SECRET = os.getenv("MERCADOPAGO_WEBHOOK_SECRET", "dev_secret")

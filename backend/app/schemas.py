@@ -1,14 +1,55 @@
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
+from re import match
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+
+# Validator para força de senha
+def validate_password_strength(password: str) -> str:
+    """
+    Valida senha forte:
+    - Mínimo 12 caracteres
+    - Pelo menos 1 letra maiúscula
+    - Pelo menos 1 letra minúscula
+    - Pelo menos 1 dígito
+    - Pelo menos 1 caractere especial
+    """
+    if len(password) < 12:
+        raise ValueError("Senha deve ter no mínimo 12 caracteres")
+    
+    if not match(r'^(?=.*[A-Z])', password):
+        raise ValueError("Senha deve conter pelo menos 1 letra maiúscula")
+    
+    if not match(r'^(?=.*[a-z])', password):
+        raise ValueError("Senha deve conter pelo menos 1 letra minúscula")
+    
+    if not match(r'^(?=.*\d)', password):
+        raise ValueError("Senha deve conter pelo menos 1 dígito")
+    
+    if not match(r'^(?=.*[@$!%*?&])', password):
+        raise ValueError("Senha deve conter pelo menos 1 caractere especial (@$!%*?&)")
+    
+    return password
 
 
 class UserCreate(BaseModel):
     email: EmailStr
-    username: Optional[str] = None
-    password: str
+    username: Optional[str] = Field(None, min_length=3, max_length=50)
+    password: str = Field(min_length=12, description="Senha forte: maiúscula, minúscula, dígito, especial")
+    
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        return validate_password_strength(v)
+    
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, v: Optional[str]) -> Optional[str]:
+        if v and not match(r'^[a-zA-Z0-9_-]+$', v):
+            raise ValueError("Username pode conter apenas letras, números, hífen e underline")
+        return v
 
 
 class UserResponse(BaseModel):
@@ -42,20 +83,25 @@ class ForgotPasswordRequest(BaseModel):
 
 
 class ResetPasswordRequest(BaseModel):
-    token: str
-    new_password: str
+    token: str = Field(..., min_length=10)
+    new_password: str = Field(min_length=12, description="Senha forte: maiúscula, minúscula, dígito, especial")
+    
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, v: str) -> str:
+        return validate_password_strength(v)
 
 
 class UserLogin(BaseModel):
-    username: str
-    password: str
+    username: str = Field(..., min_length=3, max_length=50)
+    password: str = Field(..., min_length=8)
 
 
 class ProfileCreate(BaseModel):
-    name: str
-    avatar_url: Optional[str] = None
+    name: str = Field(..., min_length=2, max_length=100)
+    avatar_url: Optional[str] = Field(None, max_length=500)
     is_kids: bool = False
-    pin_code: Optional[str] = None
+    pin_code: Optional[str] = Field(None, regex=r'^\d{4}$')  # 4 dígitos
 
 
 class ProfileResponse(BaseModel):
@@ -70,18 +116,18 @@ class ProfileResponse(BaseModel):
 
 
 class MediaCreate(BaseModel):
-    title: str
-    description: str
-    content_type: str
-    genre: str
-    release_year: int
-    duration: int
-    rating: str
-    thumbnail_url: str
-    banner_url: str
-    trailer_url: str
-    video_url: str
-    ai_emotions_tags: list[str] = []
+    title: str = Field(..., min_length=1, max_length=255)
+    description: str = Field(..., min_length=10, max_length=2000)
+    content_type: str = Field(..., regex=r'^(movie|series|documentary|special)$')
+    genre: str = Field(..., min_length=2, max_length=50)
+    release_year: int = Field(..., ge=1900, le=2100)
+    duration: int = Field(..., gt=0, le=14400)  # até 4 horas em segundos
+    rating: str = Field(..., regex=r'^(G|PG|PG-13|R|NC-17|L| 10|12|14|16|18)$')
+    thumbnail_url: str = Field(..., max_length=500)
+    banner_url: str = Field(..., max_length=500)
+    trailer_url: Optional[str] = Field(None, max_length=500)
+    video_url: str = Field(..., max_length=500)
+    ai_emotions_tags: list[str] = Field(default_factory=list, max_items=10)
 
 
 class MediaResponse(BaseModel):

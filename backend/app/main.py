@@ -3,10 +3,13 @@ import logging
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import generate_latest
 
 from app.database import Base, engine
 from app.logging_config import setup_logging
+from app.config import FRONTEND_URL, ADMIN_FRONTEND_URL
+from app.exception_handlers import register_exception_handlers
 from app.metrics import PrometheusMiddleware
 from app.middleware.stream_auth import StreamAuthMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
@@ -20,6 +23,27 @@ app = FastAPI(
     title="Nexus Twos",
     version="1.0",
 )
+
+# ===== CORS Configuration =====
+allowed_origins = [
+    FRONTEND_URL,
+    ADMIN_FRONTEND_URL,
+    "http://localhost:3000",
+    "http://localhost:5000",
+    "http://localhost:8000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[origin for origin in allowed_origins if origin],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],  # Métodos específicos, não wildcard
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "Accept"],  # Headers específicos
+    max_age=3600,  # Cache preflight por 1 hora
+)
+
+# Registra exception handlers
+register_exception_handlers(app)
 
 # Adiciona middlewares (última adição = primeira execução)
 app.add_middleware(StreamAuthMiddleware)        # 3º: Valida tokens de stream

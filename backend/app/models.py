@@ -16,6 +16,7 @@ class User(Base):
     username = Column(String(100), unique=True, nullable=True, index=True)
     hashed_password = Column(Text, nullable=False)
     is_premium = Column(Boolean, default=False)
+    role = Column(String(20), default="user", nullable=False)  # user, moderator, admin
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     profiles = relationship("Profile", back_populates="user", cascade="all, delete-orphan")

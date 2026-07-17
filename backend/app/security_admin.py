@@ -4,17 +4,16 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import User
 
-# Lista de emails de admin (você pode expandir isso com um campo no banco)
-ADMIN_EMAILS = [
-    "admin@nexus.com",
-    "admin@example.com",
-]
 
-
-def get_admin_user(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_admin_user(current_user: User = Depends(get_current_user)):
     """
     Verifica se o usuário atual é um administrador.
-    Retorna o usuário se for admin, lança exceção caso contrário.
+    Valida o campo `role` na tabela users.
+    
+    Roles disponíveis:
+    - 'admin': Acesso total ao sistema
+    - 'moderator': Acesso limitado para moderar conteúdo
+    - 'user': Usuário comum (sem privilégios administrativos)
     """
     if current_user is None:
         raise HTTPException(
@@ -22,20 +21,18 @@ def get_admin_user(current_user: User = Depends(get_current_user), db: Session =
             detail="Usuário não autenticado",
         )
 
-    if current_user.email not in ADMIN_EMAILS:
+    if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Acesso negado. Apenas administradores podem acessar.",
+            detail="Acesso negado. Apenas administradores podem acessar este recurso.",
         )
 
     return current_user
 
 
-# Versão alternativa usando um campo no banco de dados (recomendado para produção)
-def get_admin_user_from_db(current_user: User = Depends(get_current_user)):
+def get_moderator_user(current_user: User = Depends(get_current_user)):
     """
-    Verifica permissão de admin consultando campo no banco.
-    Para isso, adicionar campo `is_admin: bool` ao modelo User.
+    Verifica se o usuário é moderador ou admin.
     """
     if current_user is None:
         raise HTTPException(
@@ -43,8 +40,11 @@ def get_admin_user_from_db(current_user: User = Depends(get_current_user)):
             detail="Usuário não autenticado",
         )
 
-    # Quando implementar campo is_admin:
-    # if not current_user.is_admin:
-    #     raise HTTPException(...)
+    if current_user.role not in ("admin", "moderator"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso negado. Apenas moderadores podem acessar este recurso.",
+        )
 
     return current_user
+
