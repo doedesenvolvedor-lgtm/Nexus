@@ -1,4 +1,4 @@
-# 🚀 Deployement em VPS - Nexus Streaming
+#[text](VPS_DEPLOYMENT.md) 🚀 Deployement em VPS - Nexus Streaming
 
 ## Pré-requisitos
 
@@ -149,7 +149,7 @@ Alertmanager: https://seu-dominio/alertmanager (protegido)
 ```bash
 apt-get install -y apache2-utils
 htpasswd -c /etc/nginx/.htpasswd admin
-# Digite senha desejada
+# Digite senha desejada 180617
 ```
 
 ### 2. Configurar Nginx
