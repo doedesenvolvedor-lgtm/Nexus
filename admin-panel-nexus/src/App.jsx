@@ -4,28 +4,41 @@ import { Sidebar } from './components/Layout/Sidebar'
 import { Header } from './components/Layout/Header'
 import { NotificationContainer } from './components/Notification'
 
-// Pages
+// Pages - Core
 import Dashboard from './pages/Dashboard'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
+
+// Pages - Content Management
 import MoviesPage from './pages/Movies'
+import SeriesPage from './pages/Series'
+import EpisodesPage from './pages/Episodes'
+import ChannelsPage from './pages/Channels'
+import CategoriesPage from './pages/Categories'
+import BannersPage from './pages/Banners'
+
+// Pages - Users & Subscriptions
 import UsersPage from './pages/Users'
+import ProfilesPage from './pages/Profiles'
 import SubscriptionsPage from './pages/Subscriptions'
 import TrialsPage from './pages/Trials'
-import PaymentsPage from './pages/Payments'
-import AnalyticsPage from './pages/Analytics'
-import NotificationsPage from './pages/Notifications'
-import SettingsPage from './pages/Settings'
+import PlansPage from './pages/Plans'
 
-// Placeholder Pages
-const PlaceholderPage = ({ title }) => (
-  <div className="flex items-center justify-center min-h-[400px]">
-    <div className="text-center">
-      <h1 className="text-4xl font-bold text-nexus-primary mb-4">{title}</h1>
-      <p className="text-nexus-text-secondary">Esta página será implementada em breve.</p>
-    </div>
-  </div>
-)
+// Pages - Financial
+import PaymentsPage from './pages/Payments'
+import CouponsPage from './pages/Coupons'
+
+// Pages - Tools & Integration
+import M3UImporterPage from './pages/M3UImporter'
+import TMDbIntegrationPage from './pages/TMDbIntegration'
+
+// Pages - Monitoring & Admin
+import NotificationsPage from './pages/Notifications'
+import CommentsPage from './pages/Comments'
+import LogsPage from './pages/Logs'
+import AnalyticsPage from './pages/Analytics'
+import SettingsPage from './pages/Settings'
+import AdminProfilePage from './pages/AdminProfile'
 
 function App() {
   const isAuthenticated = !!localStorage.getItem('token')
@@ -53,50 +66,42 @@ function App() {
                         {/* Dashboard */}
                         <Route path="/dashboard" element={<Dashboard />} />
 
-                        {/* Movies */}
+                        {/* Content Management */}
                         <Route path="/movies" element={<MoviesPage />} />
                         <Route path="/movies/new" element={<MoviesPage />} />
                         <Route path="/movies/:id" element={<MoviesPage />} />
 
-                        {/* Series */}
-                        <Route path="/series" element={<PlaceholderPage title="📺 Séries" />} />
-                        <Route path="/series/new" element={<PlaceholderPage title="Nova Série" />} />
-                        <Route path="/series/:id" element={<PlaceholderPage title="Editar Série" />} />
+                        <Route path="/series" element={<SeriesPage />} />
+                        <Route path="/series/new" element={<SeriesPage />} />
+                        <Route path="/series/:id" element={<SeriesPage />} />
 
-                        {/* Episodes */}
-                        <Route path="/episodes" element={<PlaceholderPage title="⏱️ Episódios" />} />
+                        <Route path="/episodes" element={<EpisodesPage />} />
+                        <Route path="/channels" element={<ChannelsPage />} />
+                        <Route path="/categories" element={<CategoriesPage />} />
+                        <Route path="/banners" element={<BannersPage />} />
 
-                        {/* Channels */}
-                        <Route path="/channels" element={<PlaceholderPage title="📡 Canais ao Vivo" />} />
-
-                        {/* Categories */}
-                        <Route path="/categories" element={<PlaceholderPage title="🎯 Categorias" />} />
-
-                        {/* Banners */}
-                        <Route path="/banners" element={<PlaceholderPage title="🖼️ Banners" />} />
-
-                        {/* Users */}
+                        {/* Users & Subscriptions */}
                         <Route path="/users" element={<UsersPage />} />
-                        <Route path="/profiles" element={<PlaceholderPage title="👤 Perfis" />} />
+                        <Route path="/profiles" element={<ProfilesPage />} />
                         <Route path="/trials" element={<TrialsPage />} />
-
-                        {/* Subscriptions */}
-                        <Route path="/plans" element={<PlaceholderPage title="💳 Planos" />} />
+                        <Route path="/plans" element={<PlansPage />} />
                         <Route path="/subscriptions" element={<SubscriptionsPage />} />
+
+                        {/* Financial */}
                         <Route path="/payments" element={<PaymentsPage />} />
-                        <Route path="/coupons" element={<PlaceholderPage title="🎁 Cupons" />} />
+                        <Route path="/coupons" element={<CouponsPage />} />
 
-                        {/* Tools */}
-                        <Route path="/importer" element={<PlaceholderPage title="📥 Importador M3U" />} />
-                        <Route path="/tmdb" element={<PlaceholderPage title="🎬 TMDb Integration" />} />
+                        {/* Tools & Integration */}
+                        <Route path="/importer" element={<M3UImporterPage />} />
+                        <Route path="/tmdb" element={<TMDbIntegrationPage />} />
 
-                        {/* Other */}
+                        {/* Monitoring & Admin */}
                         <Route path="/notifications" element={<NotificationsPage />} />
-                        <Route path="/comments" element={<PlaceholderPage title="💬 Comentários" />} />
+                        <Route path="/comments" element={<CommentsPage />} />
                         <Route path="/analytics" element={<AnalyticsPage />} />
-                        <Route path="/logs" element={<PlaceholderPage title="📋 Logs" />} />
+                        <Route path="/logs" element={<LogsPage />} />
                         <Route path="/settings" element={<SettingsPage />} />
-                        <Route path="/profile" element={<PlaceholderPage title="👤 Perfil Admin" />} />
+                        <Route path="/profile" element={<AdminProfilePage />} />
 
                         {/* Default Redirect */}
                         <Route path="/" element={<Navigate to="/dashboard" replace />} />

@@ -23,6 +23,15 @@ PROJECT_DIR="/opt/nexus"
 FAILED=0
 PASSED=0
 
+if docker compose version > /dev/null 2>&1; then
+    DC="docker compose"
+elif docker-compose version > /dev/null 2>&1; then
+    DC="docker-compose"
+else
+    echo -e "${RED}✗${NC} Docker Compose não encontrado"
+    exit 1
+fi
+
 echo -e "${BLUE}╔═══════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║        Verificação de Deployment - VPS Nexus                ║${NC}"
 echo -e "${BLUE}╚═══════════════════════════════════════════════════════════════╝${NC}\n"
@@ -52,12 +61,23 @@ fi
 
 echo -e "\n${YELLOW}[2/10]${NC} Verificando Docker Compose..."
 
-if docker-compose config > /dev/null 2>&1; then
+if $DC config > /dev/null 2>&1; then
     echo -e "${GREEN}✓${NC} Docker Compose configurado corretamente"
     PASSED=$((PASSED + 1))
 else
     echo -e "${RED}✗${NC} Erro no docker-compose.yml"
     FAILED=$((FAILED + 1))
+fi
+
+if [ -f ".env" ]; then
+    if grep -q "^GF_ADMIN_PASSWORD=change_me_in_production$" .env || grep -q "^GF_ADMIN_PASSWORD=$" .env; then
+        echo -e "${RED}✗${NC} GF_ADMIN_PASSWORD inválido no .env"
+        FAILED=$((FAILED + 1))
+    else
+        echo -e "${GREEN}✓${NC} GF_ADMIN_PASSWORD definido no .env"
+    fi
+else
+    echo -e "${YELLOW}⚠${NC} Arquivo .env não encontrado (copie de .env.docker-compose)"
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -70,11 +90,12 @@ SERVICES=("postgres" "redis" "backend" "nginx" "prometheus" "grafana" "alertmana
 RUNNING=0
 
 for service in "${SERVICES[@]}"; do
-    if docker-compose exec -T "$service" echo "ok" > /dev/null 2>&1; then
+    if $DC ps --status running --services | grep -qx "$service"; then
         echo -e "  ${GREEN}✓${NC} $service - rodando"
         RUNNING=$((RUNNING + 1))
     else
-        echo -e "  ${YELLOW}⚠${NC} $service - verificar status"
+        echo -e "  ${YELLOW}⚠${NC} $service - não está rodando (últimos logs abaixo)"
+        $DC logs --no-color --tail=20 "$service" 2>/dev/null || true
     fi
 done
 
@@ -104,7 +125,7 @@ fi
 
 echo -e "\n${YELLOW}[5/10]${NC} Verificando PostgreSQL..."
 
-if docker-compose exec -T postgres pg_isready -U postgres > /dev/null 2>&1; then
+if $DC exec -T postgres pg_isready -U postgres > /dev/null 2>&1; then
     echo -e "${GREEN}✓${NC} PostgreSQL conectável"
     PASSED=$((PASSED + 1))
 else
@@ -118,7 +139,7 @@ fi
 
 echo -e "\n${YELLOW}[6/10]${NC} Verificando Redis..."
 
-if docker-compose exec -T redis redis-cli ping > /dev/null 2>&1; then
+if $DC exec -T redis redis-cli ping > /dev/null 2>&1; then
     echo -e "${GREEN}✓${NC} Redis respondendo"
     PASSED=$((PASSED + 1))
 else
@@ -133,8 +154,12 @@ fi
 echo -e "\n${YELLOW}[7/10]${NC} Verificando Prometheus..."
 
 if curl -s http://localhost:9090/-/healthy > /dev/null 2>&1; then
-    echo -e "${GREEN}✓${NC} Prometheus em http://localhost:9090"
-    PASSED=$((PASSED + 1))
+    if $DC logs --no-color --tail=200 prometheus 2>/dev/null | grep -q "Server is ready to receive web requests"; then
+        echo -e "${GREEN}✓${NC} Prometheus em http://localhost:9090 e configuração carregada"
+        PASSED=$((PASSED + 1))
+    else
+        echo -e "${YELLOW}⚠${NC} Prometheus respondeu, mas sem confirmação de inicialização completa nos logs"
+    fi
 else
     echo -e "${YELLOW}⚠${NC} Prometheus - verificar portas"
 fi
@@ -197,14 +222,14 @@ if [ $FAILED -eq 0 ]; then
     echo -e "\n${BLUE}Acessos:${NC}"
     echo -e "  • API:          http://localhost:8000/docs"
     echo -e "  • Prometheus:   http://localhost:9090"
-    echo -e "  • Grafana:      http://localhost:3000 (admin/admin)"
+    echo -e "  • Grafana:      http://localhost:3000 (admin/\$GF_ADMIN_PASSWORD)"
     echo -e "  • AlertManager: http://localhost:9093"
     exit 0
 else
     echo -e "${RED}❌ $FAILED verificação(ões) falharam${NC}"
     echo -e "\n${YELLOW}Ações recomendadas:${NC}"
-    echo -e "  • Revisar logs: docker-compose logs -f"
-    echo -e "  • Reiniciar: docker-compose restart"
+    echo -e "  • Revisar logs: $DC logs -f"
+    echo -e "  • Reiniciar: $DC restart"
     echo -e "  • Validar .env: cat .env.docker-compose"
     exit 1
 fi
