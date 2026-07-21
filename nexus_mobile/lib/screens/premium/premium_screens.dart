@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/colors.dart';
 import '../../widgets/custom_widgets.dart';
-import '../../models/models.dart';
 
 /// Tela de Boas-vindas ao Trial (3 dias grátis)
 class TrialWelcomeScreen extends StatelessWidget {

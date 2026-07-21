@@ -27,7 +27,6 @@ class _LoginScreenPremiumState extends State<LoginScreenPremium>
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   bool _showPassword = false;
-  int _failedAttempts = 0;
 
   @override
   void initState() {
@@ -85,7 +84,6 @@ class _LoginScreenPremiumState extends State<LoginScreenPremium>
           Navigator.pushReplacementNamed(context, '/home');
         }
       } else {
-        _failedAttempts++;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(response.message),
@@ -444,7 +442,7 @@ class _RegisterScreenPremiumState extends State<RegisterScreenPremium>
 
     try {
       final response = await authService.register(
-        name: nameController.text.trim(),
+        username: nameController.text.trim(),
         email: emailController.text.trim(),
         password: passwordController.text,
       );
@@ -806,7 +804,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
-                      textAlign: TextAlign.center,
+
                     ),
                   ),
 
@@ -818,7 +816,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       fontSize: 13,
                       fontWeight: FontWeight.w400,
                       color: AppColors.textSecondary,
-                      textAlign: TextAlign.center,
+
                     ),
                   ),
 

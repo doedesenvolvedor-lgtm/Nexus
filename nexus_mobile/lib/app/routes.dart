@@ -15,11 +15,13 @@ import '../screens/splash/splash_screen.dart';
 import '../screens/trial/trial_welcome_screen.dart';
 import '../screens/trial/trial_status_screen.dart';
 import '../screens/trial/plans_screen.dart';
+import '../screens/onboarding/onboarding_screen.dart';
 
 final routes = <String, WidgetBuilder>{
   '/': (_) => const SplashScreen(),
   '/login': (_) => const LoginScreen(),
   '/register': (_) => const RegisterScreen(),
+  '/onboarding': (_) => const OnboardingScreen(),
   '/profiles': (_) => const ProfileSelectionScreen(),
   '/create-profile': (_) => const CreateProfileScreen(),
   '/home': (_) => const MainShell(),

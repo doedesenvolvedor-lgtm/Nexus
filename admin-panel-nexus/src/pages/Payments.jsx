@@ -22,7 +22,7 @@ const PaymentsPage = () => {
         paymentsAPI.list(1, 20),
         paymentsAPI.getStats(),
       ])
-      setPayments(paymentsResponse.data.data || [])
+      setPayments(Array.isArray(paymentsResponse.data) ? paymentsResponse.data : (paymentsResponse.data.data || []))
       setStats(statsResponse.data)
     } catch (error) {
       console.error('Erro ao carregar dados:', error)
@@ -56,7 +56,7 @@ const PaymentsPage = () => {
     {
       key: 'amount',
       label: 'Valor',
-      render: (value) => `R$ ${(value / 100).toFixed(2)}`,
+      render: (value) => `R$ ${Number(value || 0).toFixed(2)}`,
     },
     {
       key: 'method',
@@ -133,7 +133,7 @@ const PaymentsPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <StatCard
               title="Receita Total"
-              value={`R$ ${(stats.total_revenue / 100).toFixed(2)}`}
+              value={`R$ ${Number(stats.total_revenue || 0).toFixed(2)}`}
               color="success"
             />
             <StatCard
@@ -143,7 +143,7 @@ const PaymentsPage = () => {
             />
             <StatCard
               title="Reembolsos"
-              value={`R$ ${(stats.refunded_amount / 100).toFixed(2)}`}
+              value={`R$ ${Number(stats.refunded_amount || 0).toFixed(2)}`}
               color="error"
             />
           </div>

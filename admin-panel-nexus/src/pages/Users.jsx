@@ -25,7 +25,7 @@ const UsersPage = () => {
     try {
       setLoading(true)
       const response = await usersAPI.list(1, 20)
-      setUsers(response.data.data || [])
+      setUsers(Array.isArray(response.data) ? response.data : (response.data.data || []))
     } catch (error) {
       console.error('Erro ao carregar usuários:', error)
     } finally {

@@ -24,7 +24,6 @@ class VideoPlayerScreenPremium extends StatefulWidget {
 }
 
 class _VideoPlayerScreenPremiumState extends State<VideoPlayerScreenPremium> {
-  late VideoPlayerController _videoController;
   bool _showControls = true;
   bool _isPlaying = false;
   bool _isFullscreen = false;

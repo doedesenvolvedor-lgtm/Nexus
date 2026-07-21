@@ -2,7 +2,7 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
 
@@ -134,6 +134,82 @@ def users(
     }
 
 
+@router.get("/payments")
+def list_payments(
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=100),
+    status: str | None = Query(default=None),
+    method: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    query = db.query(Payment, User).join(User, Payment.user_id == User.id).order_by(Payment.created_at.desc())
+
+    if status:
+        query = query.filter(Payment.status == status)
+    if method:
+        query = query.filter(Payment.provider == method)
+
+    rows = query.all()
+    start = (page - 1) * limit
+    end = start + limit
+    paginated_rows = rows[start:end]
+
+    return {
+        "data": [
+            {
+                "id": str(payment.id),
+                "user_email": user.email,
+                "amount": payment.amount,
+                "method": payment.provider,
+                "status": payment.status,
+                "created_at": payment.created_at,
+            }
+            for payment, user in paginated_rows
+        ],
+        "total": len(rows),
+        "page": page,
+        "limit": limit,
+    }
+
+
+@router.get("/payments/stats")
+def payment_stats(db: Session = Depends(get_db)):
+    approved_amount = sum(
+        payment.amount
+        for payment in db.query(Payment).filter(Payment.status == "approved").all()
+    )
+    refunded_amount = sum(
+        payment.amount
+        for payment in db.query(Payment).filter(Payment.status == "refunded").all()
+    )
+    pending_count = db.query(Payment).filter(Payment.status == "pending").count()
+
+    return {
+        "total_revenue": approved_amount,
+        "pending_count": pending_count,
+        "refunded_amount": refunded_amount,
+    }
+
+
+@router.post("/payments/{payment_id}/refund")
+def refund_payment(payment_id: str, db: Session = Depends(get_db)):
+    payment = db.query(Payment).filter(Payment.id == payment_id).first()
+    if not payment:
+        raise HTTPException(status_code=404, detail="Pagamento não encontrado.")
+    if payment.status != "approved":
+        raise HTTPException(status_code=400, detail="Somente pagamentos aprovados podem ser reembolsados.")
+
+    payment.status = "refunded"
+    payment.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(payment)
+
+    return {
+        "message": "Pagamento marcado como reembolsado.",
+        "payment_id": str(payment.id),
+        "status": payment.status,
+    }
+
 @router.put("/users/{user_id}/premium")
 def premium(user_id: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
@@ -154,6 +230,72 @@ def delete_user(user_id: str, db: Session = Depends(get_db)):
     db.delete(user)
     db.commit()
     return {"message": "Usuário removido."}
+
+
+
+@router.post("/users/{user_id}/block")
+def block_user(user_id: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+
+    subscription = (
+        db.query(Subscription)
+        .filter(Subscription.user_id == user_id)
+        .order_by(Subscription.created_at.desc())
+        .first()
+    )
+    if subscription:
+        subscription.status = "blocked"
+        subscription.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    return {"message": "Usuário bloqueado."}
+
+
+@router.post("/users/{user_id}/unblock")
+def unblock_user(user_id: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+
+    subscription = (
+        db.query(Subscription)
+        .filter(Subscription.user_id == user_id)
+        .order_by(Subscription.created_at.desc())
+        .first()
+    )
+    if subscription:
+        subscription.status = "active"
+        subscription.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    return {"message": "Usuário desbloqueado."}
+
+
+@router.post("/users/{user_id}/plan")
+def change_user_plan(
+    user_id: str,
+    payload: dict = Body(...),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+
+    plan = str(payload.get("plan", "")).strip()
+    if not plan:
+        raise HTTPException(status_code=400, detail="Plano inválido.")
+
+    subscription = (
+        db.query(Subscription)
+        .filter(Subscription.user_id == user_id)
+        .order_by(Subscription.created_at.desc())
+        .first()
+    )
+    if subscription:
+        subscription.plan = plan
+        subscription.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    return {"message": f"Plano do usuário atualizado para {plan}."}
 
 
 @router.post("/announcements/email")
