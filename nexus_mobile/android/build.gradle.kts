@@ -3,6 +3,15 @@ allprojects {
         google()
         mavenCentral()
     }
+    // Ensure all Android subprojects (plugins) use at least compileSdk 34
+    afterEvaluate {
+        extensions.findByType(com.android.build.gradle.BaseExtension::class.java)?.apply {
+            val current = compileSdkVersion?.removePrefix("android-")?.toIntOrNull() ?: 0
+            if (current in 1..33) {
+                compileSdkVersion(34)
+            }
+        }
+    }
 }
 
 val newBuildDir: Directory =

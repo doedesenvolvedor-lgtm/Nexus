@@ -13,7 +13,7 @@ from app.exception_handlers import register_exception_handlers
 from app.metrics import PrometheusMiddleware
 from app.middleware.stream_auth import StreamAuthMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
-from app.routers import admin, auth, episodes, history, media, notifications, payments, profiles, queue_jobs, ratings, recommendations, subscriptions, subscriptions_trial, watchlist, webhooks
+from app.routers import admin, auth, downloads, episodes, history, media, notifications, payments, profiles, queue_jobs, ratings, recommendations, subscriptions, subscriptions_trial, watchlist, webhooks
 
 # Configura logging
 setup_logging()
@@ -70,12 +70,18 @@ app.include_router(subscriptions_trial.router)
 app.include_router(payments.router)
 app.include_router(webhooks.router, prefix="/webhook")
 app.include_router(notifications.router)
+app.include_router(downloads.router)
 app.include_router(admin.router, prefix="/admin")
 app.include_router(queue_jobs.router)
 
 streams_dir = Path("storage/streams")
 streams_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/streams", StaticFiles(directory=str(streams_dir)), name="streams")
+
+# Serve releases (APKs, etc)
+releases_dir = Path("storage/releases")
+releases_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/releases", StaticFiles(directory=str(releases_dir)), name="releases")
 
 
 @app.get("/")

@@ -8,7 +8,7 @@ class TrialNotificationService {
   static const String _channelName = 'Notificações de Trial';
 
   static Future<void> initialize() async {
-    const settingsAndroid = AndroidInitializationSettings('@app_icon');
+    const settingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
     const settingsIOS = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,

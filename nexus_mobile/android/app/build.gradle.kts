@@ -1,12 +1,11 @@
 plugins {
     id("com.android.application")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
     namespace = "com.nexus.streaming"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -16,12 +15,9 @@ android {
     }
 
     defaultConfig {
-        // Nexus Streaming - Production Application ID
         applicationId = "com.nexus.streaming"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -30,7 +26,7 @@ android {
         create("release") {
             keyAlias = System.getenv("KEYSTORE_ALIAS") ?: "nexus_key"
             keyPassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
-            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "./android/app/keystore/nexus.jks")
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "keystore/nexus.jks")
             storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
         }
     }
@@ -38,6 +34,7 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }
