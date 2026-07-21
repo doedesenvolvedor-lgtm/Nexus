@@ -2,17 +2,21 @@ from pathlib import Path
 import logging
 
 from fastapi import FastAPI
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from prometheus_client import generate_latest
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from sqlalchemy import text
 
 from app.database import Base, engine
+from app.database import SessionLocal
 from app.logging_config import setup_logging
 from app.config import FRONTEND_URL, ADMIN_FRONTEND_URL
 from app.exception_handlers import register_exception_handlers
 from app.metrics import PrometheusMiddleware
 from app.middleware.stream_auth import StreamAuthMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
+from app.services.admin_bootstrap_service import enforce_non_billing_premium_accounts
 from app.routers import admin, auth, downloads, episodes, history, media, notifications, payments, profiles, queue_jobs, ratings, recommendations, subscriptions, subscriptions_trial, watchlist, webhooks
 
 # Configura logging
@@ -52,6 +56,16 @@ app.add_middleware(PrometheusMiddleware)        # 1º: Coleta métricas
 
 try:
     Base.metadata.create_all(bind=engine)
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "ALTER TABLE users "
+                "ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'user' NOT NULL"
+            )
+        )
+        connection.execute(
+            text("CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)")
+        )
     logger.info("Database tables initialized successfully")
 except Exception as exc:  # pragma: no cover - defensive for local/dev environments
     logger.error(f"Warning: could not initialize database tables: {exc}")
@@ -84,6 +98,21 @@ releases_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/releases", StaticFiles(directory=str(releases_dir)), name="releases")
 
 
+@app.on_event("startup")
+def apply_admin_bootstrap():
+    db = SessionLocal()
+    try:
+        updated_accounts = enforce_non_billing_premium_accounts(db)
+        if updated_accounts:
+            logger.info(
+                "Applied non-billing premium admin bootstrap to %d account(s): %s",
+                len(updated_accounts),
+                ", ".join(updated_accounts),
+            )
+    finally:
+        db.close()
+
+
 @app.get("/")
 def root():
     logger.info("Root endpoint accessed")
@@ -104,4 +133,4 @@ def health():
 def metrics():
     """Endpoint para Prometheus coletar métricas."""
     logger.debug("Metrics endpoint accessed")
-    return generate_latest()
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)

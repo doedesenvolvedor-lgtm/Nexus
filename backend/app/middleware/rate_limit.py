@@ -23,6 +23,7 @@ class RateLimitMiddleware:
         # Extrair IP do cliente
         client_ip = self._get_client_ip(request)
         endpoint = request.url.path
+        response_limit_info = None
         
         # Rotas que não aplicam rate limit
         if self._should_skip_rate_limit(endpoint):
@@ -35,6 +36,7 @@ class RateLimitMiddleware:
                 info,
                 "Limite global de requisições atingido (1000/hora por IP)",
             )
+        response_limit_info = info
         
         # ==================== VERIFICAÇÃO 2: LIMITE POR ENDPOINT ====================
         allowed, info = rate_limit_service.check_endpoint_limit(client_ip, endpoint)
@@ -51,6 +53,7 @@ class RateLimitMiddleware:
                 info,
                 messages.get(limit_type, "Limite de requisições atingido"),
             )
+        response_limit_info = info
         
         # ==================== VERIFICAÇÃO 3: LIMITE POR USUÁRIO ====================
         # Se usuário autenticado, verificar limite específico do usuário
@@ -63,19 +66,15 @@ class RateLimitMiddleware:
                     info,
                     f"Limite de {limit_type} por usuário atingido",
                 )
+            response_limit_info = info
         
         # Processar requisição normalmente
         response = await call_next(request)
         
-        # Adicionar headers de rate limit na resposta
-        if user_id:
-            _, info = rate_limit_service.check_user_limit(user_id, "api")
-        else:
-            _, info = rate_limit_service.check_global_limit(client_ip)
-        
-        response.headers["X-RateLimit-Limit"] = str(info.get("limit", ""))
-        response.headers["X-RateLimit-Remaining"] = str(info.get("remaining", ""))
-        response.headers["X-RateLimit-Reset"] = str(info.get("reset_in", ""))
+        if response_limit_info is not None:
+            response.headers["X-RateLimit-Limit"] = str(response_limit_info.get("limit", ""))
+            response.headers["X-RateLimit-Remaining"] = str(response_limit_info.get("remaining", ""))
+            response.headers["X-RateLimit-Reset"] = str(response_limit_info.get("reset_in", ""))
         
         return response
     

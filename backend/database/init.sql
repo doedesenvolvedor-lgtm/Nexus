@@ -6,8 +6,11 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(100) UNIQUE,
     hashed_password TEXT NOT NULL,
     is_premium BOOLEAN DEFAULT FALSE,
+    role VARCHAR(20) DEFAULT 'user' NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 
 CREATE TABLE IF NOT EXISTS profiles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

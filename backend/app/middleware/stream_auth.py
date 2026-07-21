@@ -45,10 +45,10 @@ class StreamAuthMiddleware:
         try:
             playlist_path = request.url.path.replace("/streams/", "")
             validate_playlist_token(token, playlist_path)
-        except (JWTError, ValueError) as e:
+        except (JWTError, ValueError):
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
-                content={"detail": f"Token inválido: {str(e)}"},
+                content={"detail": "Token de streaming inválido ou expirado"},
             )
         
         return await call_next(request)

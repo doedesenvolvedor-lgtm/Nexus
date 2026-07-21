@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import MediaContent, User
+from app.security_admin import get_admin_user
 from app.schemas import MediaCreate, MediaResponse
 from app.services.cache_service import build_cache_key, delete_by_prefix, get_json, set_json
 from app.services.media_service import get_catalog, search
@@ -12,9 +13,19 @@ from app.services.stream_token_service import create_stream_token, create_playli
 router = APIRouter(tags=["Media"])
 
 
+def _serialize_media(media: MediaContent) -> dict:
+    return MediaResponse.model_validate(media).model_dump(mode="json")
+
+
 @router.post("/", response_model=MediaResponse)
-def create_movie(movie: MediaCreate, db: Session = Depends(get_db)):
-    media = MediaContent(**movie.model_dump())
+def create_movie(
+    movie: MediaCreate,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_admin_user),
+):
+    payload = movie.model_dump()
+    payload["ai_emotions_tags"] = ",".join(payload.get("ai_emotions_tags", [])) or None
+    media = MediaContent(**payload)
     db.add(media)
     db.commit()
     db.refresh(media)
@@ -31,7 +42,7 @@ def catalog(db: Session = Depends(get_db)):
         return cached
 
     data = get_catalog(db)
-    payload = [MediaResponse.model_validate(item).model_dump(mode="json") for item in data]
+    payload = [_serialize_media(item) for item in data]
     set_json(cache_key, payload, ttl_seconds=120)
     return payload
 
@@ -44,7 +55,7 @@ def movies(db: Session = Depends(get_db)):
         return cached
 
     data = db.query(MediaContent).filter(MediaContent.content_type == "movie").all()
-    payload = [MediaResponse.model_validate(item).model_dump(mode="json") for item in data]
+    payload = [_serialize_media(item) for item in data]
     set_json(cache_key, payload, ttl_seconds=120)
     return payload
 
@@ -57,7 +68,7 @@ def series(db: Session = Depends(get_db)):
         return cached
 
     data = db.query(MediaContent).filter(MediaContent.content_type == "series").all()
-    payload = [MediaResponse.model_validate(item).model_dump(mode="json") for item in data]
+    payload = [_serialize_media(item) for item in data]
     set_json(cache_key, payload, ttl_seconds=120)
     return payload
 
@@ -71,7 +82,7 @@ def search_media(q: str, db: Session = Depends(get_db)):
         return cached
 
     data = search(db, normalized)
-    payload = [MediaResponse.model_validate(item).model_dump(mode="json") for item in data]
+    payload = [_serialize_media(item) for item in data]
     set_json(cache_key, payload, ttl_seconds=60)
     return payload
 
@@ -84,8 +95,8 @@ def genre(genre: str, db: Session = Depends(get_db)):
     if cached is not None:
         return cached
 
-    data = db.query(MediaContent).filter(MediaContent.genre.ilike(normalized)).all()
-    payload = [MediaResponse.model_validate(item).model_dump(mode="json") for item in data]
+    data = db.query(MediaContent).filter(MediaContent.genre.ilike(f"%{normalized}%")).all()
+    payload = [_serialize_media(item) for item in data]
     set_json(cache_key, payload, ttl_seconds=120)
     return payload
 
@@ -99,7 +110,7 @@ def ai(emotion: str, db: Session = Depends(get_db)):
         return cached
 
     data = db.query(MediaContent).filter(MediaContent.ai_emotions_tags.ilike(f"%{normalized}%")).all()
-    payload = [MediaResponse.model_validate(item).model_dump(mode="json") for item in data]
+    payload = [_serialize_media(item) for item in data]
     set_json(cache_key, payload, ttl_seconds=60)
     return payload
 
@@ -114,7 +125,7 @@ def details(id: str, db: Session = Depends(get_db)):
     media = db.query(MediaContent).filter(MediaContent.id == id).first()
     if media is None:
         raise HTTPException(status_code=404, detail="Conteúdo não encontrado.")
-    payload = MediaResponse.model_validate(media).model_dump(mode="json")
+    payload = _serialize_media(media)
     set_json(cache_key, payload, ttl_seconds=300)
     return payload
 

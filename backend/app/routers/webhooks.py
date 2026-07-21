@@ -4,7 +4,6 @@ Suporta MercadoPago e outros provedores de pagamento.
 """
 
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
@@ -12,7 +11,6 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.config import MERCADOPAGO_WEBHOOK_SECRET
 from app.services.webhook_service import WebhookValidator, MercadoPagoWebhookData
-from app.exception_handlers import APIError
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Webhooks"])
@@ -33,6 +31,12 @@ async def mercadopago_webhook(
     - X-Request-ID: ID único da requisição
     """
     
+    if not MERCADOPAGO_WEBHOOK_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Webhook MercadoPago não configurado.",
+        )
+
     try:
         # Extrair headers de validação
         x_signature = request.headers.get("X-Signature")
@@ -57,8 +61,7 @@ async def mercadopago_webhook(
             )
         
         # Parse JSON
-        import json
-        payload = json.loads(body)
+        payload = await request.json()
         
         # Validar estrutura
         webhook_data = MercadoPagoWebhookData(**payload)
@@ -89,6 +92,8 @@ async def mercadopago_webhook(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="JSON inválido",
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Unexpected error in webhook: {e}", exc_info=True)
         raise HTTPException(
@@ -119,7 +124,7 @@ async def stripe_webhook(
             )
         
         # Ler body
-        body = await request.body()
+        await request.body()
         
         # Nota: Implementar validação de assinatura do Stripe conforme documentação
         # https://stripe.com/docs/webhooks/signatures
@@ -130,6 +135,8 @@ async def stripe_webhook(
             "message": "Webhook do Stripe recebido",
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error processing Stripe webhook: {e}", exc_info=True)
         raise HTTPException(

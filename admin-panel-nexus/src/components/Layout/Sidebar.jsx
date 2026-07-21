@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useUIStore } from '../../store'
 import {
@@ -180,8 +180,14 @@ const SidebarItem = ({ item, isOpen }) => {
 }
 
 export const Sidebar = () => {
+  const navigate = useNavigate()
   const sidebarOpen = useUIStore((state) => state.sidebarOpen)
   const toggleSidebar = useUIStore((state) => state.toggleSidebar)
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('auth-storage')
+    navigate('/login', { replace: true })
+  }
 
   return (
     <>
@@ -227,7 +233,10 @@ export const Sidebar = () => {
             <FiUser size={20} />
             <span>Perfil</span>
           </Link>
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-nexus-error hover:bg-nexus-error/10 transition-smooth">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-nexus-error hover:bg-nexus-error/10 transition-smooth"
+          >
             <FiLogOut size={20} />
             <span>Sair</span>
           </button>

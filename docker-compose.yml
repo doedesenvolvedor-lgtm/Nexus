@@ -42,6 +42,8 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/nexus
       REDIS_URL: redis://redis:6379/0
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-admin@nexus.com}
+      NON_BILLING_PREMIUM_EMAILS: ${NON_BILLING_PREMIUM_EMAILS:-}
     volumes:
       - /var/log/nexus:/var/log/nexus
 
@@ -58,6 +60,8 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/nexus
       REDIS_URL: redis://redis:6379/0
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-admin@nexus.com}
+      NON_BILLING_PREMIUM_EMAILS: ${NON_BILLING_PREMIUM_EMAILS:-}
     volumes:
       - /var/log/nexus:/var/log/nexus
 

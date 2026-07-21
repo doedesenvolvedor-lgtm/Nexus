@@ -3,10 +3,18 @@ import os
 
 load_dotenv()
 
+
+def _parse_csv_env(key: str) -> list[str]:
+    raw_value = os.getenv(key, "")
+    if not raw_value:
+        return []
+    return [item.strip().lower() for item in raw_value.split(",") if item.strip()]
+
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
 SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(
     os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1440)
 )
@@ -31,4 +39,8 @@ SMTP_RETRY_ATTEMPTS = int(os.getenv("SMTP_RETRY_ATTEMPTS", 3))
 SMTP_RETRY_DELAY = int(os.getenv("SMTP_RETRY_DELAY", 5))  # segundos
 
 # ===== Webhook Configuration =====
-MERCADOPAGO_WEBHOOK_SECRET = os.getenv("MERCADOPAGO_WEBHOOK_SECRET", "dev_secret")
+MERCADOPAGO_WEBHOOK_SECRET = os.getenv("MERCADOPAGO_WEBHOOK_SECRET", "").strip()
+
+# ===== Admin & Billing Exceptions =====
+ADMIN_EMAILS = _parse_csv_env("ADMIN_EMAILS")
+NON_BILLING_PREMIUM_EMAILS = _parse_csv_env("NON_BILLING_PREMIUM_EMAILS")

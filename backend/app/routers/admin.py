@@ -1,15 +1,14 @@
-import shutil
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
 
 from app.database import get_db
 from app.models import MediaContent, Payment, PlaybackHistory, Profile, User, Subscription
-from app.schemas import AdminEmailAnnouncementRequest
+from app.schemas import AdminEmailAnnouncementRequest, AdminUserResponse, PaginatedAdminUsersResponse
 from app.security_admin import get_admin_user
 from app.services.email_service import get_email_service
 from workers.transcoder import process_video
@@ -18,6 +17,8 @@ router = APIRouter(tags=["Admin"], dependencies=[Depends(get_admin_user)])
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
+MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024  # 2GB
+ALLOWED_UPLOAD_EXTENSIONS = {".mp4", ".mkv", ".mov", ".webm", ".avi"}
 
 
 @router.get("/dashboard")
@@ -55,18 +56,82 @@ def analytics(db: Session = Depends(get_db)):
 
 @router.get("/revenue")
 def revenue(db: Session = Depends(get_db)):
-    payments = db.query(Payment).all()
-    total = sum(payment.amount for payment in payments if payment.status == "approved")
+    approved_payments = db.query(Payment).filter(Payment.status == "approved").all()
+    total = sum(payment.amount for payment in approved_payments)
 
     return {
         "total_revenue": total,
-        "payments": len(payments),
+        "payments": len(approved_payments),
     }
 
 
-@router.get("/users")
-def users(db: Session = Depends(get_db)):
-    return db.query(User).all()
+@router.get("/dashboard/stats")
+def dashboard_stats(db: Session = Depends(get_db)):
+    return dashboard(db)
+
+
+@router.get("/users", response_model=PaginatedAdminUsersResponse)
+def users(
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None, min_length=1),
+    plan: str | None = Query(default=None),
+    status: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    query = db.query(User).order_by(User.created_at.desc())
+
+    if search:
+        normalized_search = f"%{search.strip().lower()}%"
+        query = query.filter(
+            func.lower(User.email).ilike(normalized_search)
+            | func.lower(func.coalesce(User.username, "")).ilike(normalized_search)
+        )
+
+    user_rows = query.all()
+    data: list[AdminUserResponse] = []
+
+    for user in user_rows:
+        latest_subscription = (
+            db.query(Subscription)
+            .filter(Subscription.user_id == user.id)
+            .order_by(Subscription.created_at.desc())
+            .first()
+        )
+
+        plan_value = (latest_subscription.plan or "free") if latest_subscription else "free"
+        status_value = (
+            latest_subscription.status
+            if latest_subscription and latest_subscription.status
+            else ("active" if user.is_premium else "inactive")
+        )
+
+        if plan and plan_value.lower() != plan.lower():
+            continue
+        if status and status_value.lower() != status.lower():
+            continue
+
+        data.append(
+            AdminUserResponse(
+                id=user.id,
+                email=user.email,
+                username=user.username,
+                is_premium=user.is_premium,
+                role=user.role,
+                created_at=user.created_at,
+                plan=plan_value.lower(),
+                status=status_value.lower(),
+            )
+        )
+
+    start = (page - 1) * limit
+    end = start + limit
+    return {
+        "data": data[start:end],
+        "total": len(data),
+        "page": page,
+        "limit": limit,
+    }
 
 
 @router.put("/users/{user_id}/premium")
@@ -141,9 +206,24 @@ def delete_media(media_id: str, db: Session = Depends(get_db)):
 
 @router.post("/upload")
 async def upload_video(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    path = UPLOAD_DIR / f"{uuid4()}_{file.filename}"
+    original_name = Path(file.filename or "").name
+    extension = Path(original_name).suffix.lower()
+    if extension not in ALLOWED_UPLOAD_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Formato de vídeo não permitido.")
+
+    path = UPLOAD_DIR / f"{uuid4()}_{original_name}"
+    total_written = 0
     with path.open("wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        while True:
+            chunk = await file.read(1024 * 1024)
+            if not chunk:
+                break
+            total_written += len(chunk)
+            if total_written > MAX_UPLOAD_BYTES:
+                path.unlink(missing_ok=True)
+                raise HTTPException(status_code=413, detail="Arquivo excede limite máximo de 2GB.")
+            buffer.write(chunk)
+    await file.close()
 
     output_folder = Path("storage/streams") / str(uuid4())
     master = process_video(str(path), str(output_folder))

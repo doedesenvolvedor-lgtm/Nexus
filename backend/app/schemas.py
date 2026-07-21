@@ -62,6 +62,24 @@ class UserResponse(BaseModel):
         from_attributes = True
 
 
+class AdminUserResponse(BaseModel):
+    id: UUID
+    email: EmailStr
+    username: Optional[str] = None
+    is_premium: bool = False
+    role: str
+    created_at: datetime
+    plan: str = "free"
+    status: str = "inactive"
+
+
+class PaginatedAdminUsersResponse(BaseModel):
+    data: list[AdminUserResponse]
+    total: int
+    page: int
+    limit: int
+
+
 class UserDetailResponse(BaseModel):
     id: UUID
     email: EmailStr
@@ -129,6 +147,30 @@ class MediaCreate(BaseModel):
     video_url: str = Field(..., max_length=500)
     ai_emotions_tags: list[str] = Field(default_factory=list, max_items=10)
 
+    @field_validator("thumbnail_url", "banner_url", "trailer_url", "video_url")
+    @classmethod
+    def validate_url_fields(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        trimmed = value.strip()
+        if not trimmed:
+            return trimmed
+        if trimmed.startswith("/"):
+            return trimmed
+        if not match(r"^https?://", trimmed):
+            raise ValueError("URL deve ser absoluta (http/https) ou caminho relativo iniciado por /")
+        return trimmed
+
+    @field_validator("ai_emotions_tags")
+    @classmethod
+    def normalize_ai_tags(cls, value: list[str]) -> list[str]:
+        normalized = []
+        for item in value:
+            tag = item.strip().lower()
+            if tag and tag not in normalized:
+                normalized.append(tag)
+        return normalized
+
 
 class MediaResponse(BaseModel):
     id: UUID
@@ -144,6 +186,17 @@ class MediaResponse(BaseModel):
     trailer_url: Optional[str] = None
     video_url: Optional[str] = None
     ai_emotions_tags: Optional[list[str]] = None
+
+    @field_validator("ai_emotions_tags", mode="before")
+    @classmethod
+    def parse_ai_emotions_tags(cls, value):
+        if value is None:
+            return None
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str):
+            return [item.strip() for item in value.split(",") if item.strip()]
+        return value
 
     class Config:
         from_attributes = True

@@ -3,15 +3,14 @@ Serviço para validação e processamento de webhooks de pagamento.
 Suporta MercadoPago e outros provedores de pagamento.
 """
 
-import logging
 import hmac
 import hashlib
+import logging
 from typing import Optional
 from datetime import datetime, timezone
-from uuid import UUID
 
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -117,13 +116,10 @@ class WebhookValidator:
 def _process_payment(data: dict, db: Session) -> bool:
     """Processa webhook de pagamento individual."""
     try:
-        from app.models import Payment, Subscription, User
+        from app.models import Payment, Subscription
         
         payment_id = data.get("id")
         status = data.get("status")  # approved, pending, rejected, cancelled
-        amount = data.get("amount")
-        user_id = data.get("payer", {}).get("id")  # ID do payer no MercadoPago
-        
         logger.info(f"Payment webhook: payment_id={payment_id}, status={status}")
         
         if not payment_id:
@@ -131,9 +127,7 @@ def _process_payment(data: dict, db: Session) -> bool:
             return False
         
         # Procurar pagamento existente
-        payment = db.query(Payment).filter(
-            Payment.external_id == payment_id
-        ).first()
+        payment = db.query(Payment).filter(Payment.payment_id == str(payment_id)).first()
         
         if payment:
             # Atualizar status
@@ -142,9 +136,12 @@ def _process_payment(data: dict, db: Session) -> bool:
             
             # Se aprovado, ativar subscription
             if status == "approved":
-                subscription = db.query(Subscription).filter(
-                    Subscription.id == payment.subscription_id
-                ).first()
+                subscription = (
+                    db.query(Subscription)
+                    .filter(Subscription.user_id == payment.user_id)
+                    .order_by(Subscription.created_at.desc())
+                    .first()
+                )
                 
                 if subscription:
                     subscription.status = "active"
@@ -171,6 +168,7 @@ def _process_subscription(data: dict, db: Session) -> bool:
         
         subscription_id = data.get("id")
         status = data.get("status")
+        external_reference = data.get("external_reference")
         
         logger.info(f"Subscription webhook: subscription_id={subscription_id}, status={status}")
         
@@ -178,10 +176,15 @@ def _process_subscription(data: dict, db: Session) -> bool:
             logger.warning("Missing subscription_id in webhook")
             return False
         
-        # Procurar assinatura
-        subscription = db.query(Subscription).filter(
-            Subscription.external_id == subscription_id
-        ).first()
+        subscription = None
+        if external_reference and "_plan_" in external_reference:
+            user_id_str = external_reference.split("_plan_")[0].replace("user_", "")
+            subscription = (
+                db.query(Subscription)
+                .filter(Subscription.user_id == user_id_str)
+                .order_by(Subscription.created_at.desc())
+                .first()
+            )
         
         if subscription:
             subscription.status = status

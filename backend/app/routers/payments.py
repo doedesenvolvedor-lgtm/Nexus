@@ -3,30 +3,43 @@ Endpoints de Pagamento com MercadoPago
 Web Checkout Integration
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+import logging
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import User, Payment, Subscription
 from app.services.email_service import get_email_service
 from app.services.mercadopago_service import get_mercadopago_service
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 from uuid import UUID
+from app.config import MERCADOPAGO_WEBHOOK_SECRET
+from app.services.webhook_service import WebhookValidator
 
 router = APIRouter(prefix="/payments", tags=["payments"])
+logger = logging.getLogger(__name__)
+PLAN_PRICES = {
+    "Basic": 15.0,
+    "Standard": 25.0,
+    "Premium": 40.0,
+}
 
 
 class CheckoutRequest(BaseModel):
-    plan: str  # Basic, Standard, Premium
-    price: float
+    plan: Literal["Basic", "Standard", "Premium"]
+    price: Optional[float] = Field(default=None, gt=0, le=10000)
 
 
 class CheckoutResponse(BaseModel):
     preference_id: str
     payment_url: str
     plan: str
+
+
+def _resolve_plan_price(plan: str) -> float:
+    return PLAN_PRICES[plan]
 
 
 @router.post("/checkout", response_model=CheckoutResponse)
@@ -47,7 +60,22 @@ async def create_checkout(
     ```
     """
     
+    if current_user is None:
+        raise HTTPException(status_code=401, detail="Token inválido.")
+
     try:
+        resolved_price = _resolve_plan_price(request.plan)
+        if request.price is not None and abs(request.price - resolved_price) > 0.009:
+            logger.warning(
+                "Ignoring client supplied checkout price",
+                extra={
+                    "user_id": str(current_user.id),
+                    "plan": request.plan,
+                    "client_price": request.price,
+                    "resolved_price": resolved_price,
+                },
+            )
+
         mp_service = get_mercadopago_service()
         
         # Criar preferência no MercadoPago
@@ -56,7 +84,7 @@ async def create_checkout(
             username=current_user.username,
             email=current_user.email,
             plan=request.plan,
-            price=request.price,
+            price=resolved_price,
         )
         
         # Registrar pagamento como "pending" no banco
@@ -64,7 +92,7 @@ async def create_checkout(
             user_id=current_user.id,
             provider="mercadopago",
             payment_id=preference.get("preference_id"),
-            amount=request.price,
+            amount=resolved_price,
             currency="BRL",
             status="pending",
             plan=request.plan,
@@ -78,14 +106,19 @@ async def create_checkout(
             plan=request.plan,
         )
         
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Configuração de pagamento inválida.") from exc
+    except Exception as exc:
+        logger.error("Erro ao criar checkout MercadoPago", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Não foi possível iniciar o checkout no provedor de pagamento.",
+        ) from exc
 
 
 @router.get("/success")
 async def payment_success(
     preference_id: Optional[str] = None,
-    payment_id: Optional[str] = None,
     status: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
@@ -120,10 +153,15 @@ async def payment_success(
             "redirect_url": f"https://nexus.app/subscription/pending?plan={payment.plan}"
         }
         
-    except Exception as e:
+    except Exception:
+        logger.error(
+            "Erro ao processar callback de pagamento",
+            extra={"preference_id": preference_id, "status": status},
+            exc_info=True,
+        )
         return {
             "status": "error",
-            "message": str(e),
+            "message": "Não foi possível confirmar o retorno do pagamento.",
             "redirect_url": "https://nexus.app/subscription/error"
         }
 
@@ -159,7 +197,29 @@ async def webhook_mercadopago(
     Webhook do MercadoPago para notificações de pagamento
     """
     
+    if not MERCADOPAGO_WEBHOOK_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Webhook MercadoPago não configurado.",
+        )
+
     try:
+        raw_body = await request.body()
+        x_signature = request.headers.get("X-Signature")
+        x_request_id = request.headers.get("X-Request-ID")
+
+        is_valid = WebhookValidator.validate_mercadopago_signature(
+            x_signature=x_signature,
+            x_request_id=x_request_id,
+            body=raw_body,
+            webhook_secret=MERCADOPAGO_WEBHOOK_SECRET,
+        )
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Assinatura de webhook inválida",
+            )
+
         body = await request.json()
         
         # Se for notificação de pagamento
@@ -220,11 +280,15 @@ async def webhook_mercadopago(
                     
                     payment.updated_at = datetime.utcnow()
                     db.commit()
-        
+
         return {"status": "ok"}
-        
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao processar webhook: {str(e)}",
+        )
 
 
 @router.get("/me/history")
@@ -238,6 +302,9 @@ async def get_payment_history(
     Obter histórico de pagamentos do usuário
     """
     
+    if current_user is None:
+        raise HTTPException(status_code=401, detail="Token inválido.")
+
     payments = db.query(Payment).filter(
         Payment.user_id == current_user.id
     ).order_by(Payment.created_at.desc()).offset(offset).limit(limit).all()

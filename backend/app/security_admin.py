@@ -1,6 +1,5 @@
 from fastapi import Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from app.database import get_db
+from app.config import ADMIN_EMAILS
 from app.dependencies import get_current_user
 from app.models import User
 
@@ -21,7 +20,12 @@ def get_admin_user(current_user: User = Depends(get_current_user)):
             detail="Usuário não autenticado",
         )
 
-    if current_user.role != "admin":
+    user_role = getattr(current_user, "role", None)
+    user_email = (current_user.email or "").strip().lower()
+    is_allowed_email = user_email in ADMIN_EMAILS
+    is_admin_role = user_role == "admin"
+
+    if not (is_admin_role or is_allowed_email):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Acesso negado. Apenas administradores podem acessar este recurso.",
@@ -40,11 +44,14 @@ def get_moderator_user(current_user: User = Depends(get_current_user)):
             detail="Usuário não autenticado",
         )
 
-    if current_user.role not in ("admin", "moderator"):
+    user_role = getattr(current_user, "role", None)
+    user_email = (current_user.email or "").strip().lower()
+    is_allowed_email = user_email in ADMIN_EMAILS
+
+    if user_role not in ("admin", "moderator") and not is_allowed_email:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Acesso negado. Apenas moderadores podem acessar este recurso.",
         )
 
     return current_user
-

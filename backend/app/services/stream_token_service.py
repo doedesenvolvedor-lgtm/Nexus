@@ -3,10 +3,11 @@ Serviço para gerar e validar tokens JWT para streaming de vídeos.
 Tokens com expiração curta (60 minutos) vinculados a um média específico.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 
 from app.config import ALGORITHM, SECRET_KEY
+from app.security import _ensure_security_config
 
 
 def create_stream_token(media_id: str, user_id: str, expires_in_minutes: int = 60) -> str:
@@ -21,11 +22,12 @@ def create_stream_token(media_id: str, user_id: str, expires_in_minutes: int = 6
     Returns:
         JWT token string
     """
+    _ensure_security_config()
     payload = {
         "media_id": str(media_id),
         "user_id": str(user_id),
         "type": "stream",
-        "exp": datetime.utcnow() + timedelta(minutes=expires_in_minutes),
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=expires_in_minutes),
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -45,16 +47,17 @@ def validate_stream_token(token: str, media_id: str) -> dict:
         JWTError: Se token inválido ou expirado
         ValueError: Se token não for para o média solicitado
     """
+    _ensure_security_config()
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except JWTError as e:
-        raise JWTError(f"Token inválido ou expirado: {str(e)}")
+        raise JWTError("Token inválido ou expirado") from e
     
     if payload.get("type") != "stream":
         raise ValueError("Token não é do tipo stream")
     
     if payload.get("media_id") != str(media_id):
-        raise ValueError(f"Token não autorizado para este conteúdo")
+        raise ValueError("Token não autorizado para este conteúdo")
     
     return payload
 
@@ -71,11 +74,12 @@ def create_playlist_token(playlist_path: str, user_id: str, expires_in_minutes: 
     Returns:
         JWT token string
     """
+    _ensure_security_config()
     payload = {
         "playlist": playlist_path,
         "user_id": str(user_id),
         "type": "playlist",
-        "exp": datetime.utcnow() + timedelta(minutes=expires_in_minutes),
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=expires_in_minutes),
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -94,10 +98,11 @@ def validate_playlist_token(token: str, playlist_path: str) -> dict:
     Raises:
         JWTError/ValueError se inválido
     """
+    _ensure_security_config()
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except JWTError as e:
-        raise JWTError(f"Token inválido: {str(e)}")
+        raise JWTError("Token inválido ou expirado") from e
     
     if payload.get("type") != "playlist":
         raise ValueError("Token não é do tipo playlist")
