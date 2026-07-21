@@ -8,7 +8,7 @@ import {
   FiTv,
   FiUsers,
   FiDollarSign,
-  FiSetting,
+  FiSettings,
   FiMenu,
   FiX,
   FiLogOut,
@@ -95,7 +95,7 @@ const menuItems = [
   {
     label: 'Configurações',
     path: '/settings',
-    icon: FiSetting,
+    icon: FiSettings,
   },
 ]
 

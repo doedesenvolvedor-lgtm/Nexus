@@ -1,6 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { useUIStore } from '../../store'
+import { useUIStore } from '../store'
 
 export const Notification = ({ id, title, message, variant = 'info', duration = 4000, onClose }) => {
   React.useEffect(() => {

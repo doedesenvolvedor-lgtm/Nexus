@@ -4,9 +4,25 @@ from pathlib import Path
 import pythonjsonlogger.jsonlogger
 import os
 
-# Cria o diretório de logs se não existir
-log_dir = Path("/var/log/nexus")
-log_dir.mkdir(parents=True, exist_ok=True)
+
+def _resolve_log_dir() -> Path:
+    preferred_dir = Path(os.getenv("NEXUS_LOG_DIR", "/var/log/nexus"))
+    fallback_dir = Path("logs")
+
+    for candidate in (preferred_dir, fallback_dir):
+        try:
+            candidate.mkdir(parents=True, exist_ok=True)
+            test_file = candidate / ".write_test"
+            test_file.write_text("ok", encoding="utf-8")
+            test_file.unlink()
+            return candidate
+        except (PermissionError, OSError):
+            continue
+
+    raise RuntimeError("Nenhum diretório de log gravável disponível")
+
+
+log_dir = _resolve_log_dir()
 
 # Configuração de logging em formato JSON
 LOGGING_CONFIG = {
@@ -32,7 +48,7 @@ LOGGING_CONFIG = {
             "class": "logging.handlers.RotatingFileHandler",
             "level": "DEBUG",
             "formatter": "json",
-            "filename": "/var/log/nexus/app.log",
+            "filename": str(log_dir / "app.log"),
             "maxBytes": 104857600,  # 100MB
             "backupCount": 10,
             "encoding": "utf-8",
@@ -41,7 +57,7 @@ LOGGING_CONFIG = {
             "class": "logging.handlers.RotatingFileHandler",
             "level": "INFO",
             "formatter": "json",
-            "filename": "/var/log/nexus/auth.log",
+            "filename": str(log_dir / "auth.log"),
             "maxBytes": 52428800,  # 50MB
             "backupCount": 10,
             "encoding": "utf-8",
@@ -50,7 +66,7 @@ LOGGING_CONFIG = {
             "class": "logging.handlers.RotatingFileHandler",
             "level": "INFO",
             "formatter": "json",
-            "filename": "/var/log/nexus/api.log",
+            "filename": str(log_dir / "api.log"),
             "maxBytes": 52428800,  # 50MB
             "backupCount": 10,
             "encoding": "utf-8",
@@ -59,7 +75,7 @@ LOGGING_CONFIG = {
             "class": "logging.handlers.RotatingFileHandler",
             "level": "INFO",
             "formatter": "json",
-            "filename": "/var/log/nexus/payments.log",
+            "filename": str(log_dir / "payments.log"),
             "maxBytes": 52428800,  # 50MB
             "backupCount": 10,
             "encoding": "utf-8",
@@ -68,7 +84,7 @@ LOGGING_CONFIG = {
             "class": "logging.handlers.RotatingFileHandler",
             "level": "DEBUG",
             "formatter": "json",
-            "filename": "/var/log/nexus/database.log",
+            "filename": str(log_dir / "database.log"),
             "maxBytes": 52428800,  # 50MB
             "backupCount": 10,
             "encoding": "utf-8",
@@ -77,7 +93,7 @@ LOGGING_CONFIG = {
             "class": "logging.handlers.RotatingFileHandler",
             "level": "ERROR",
             "formatter": "json",
-            "filename": "/var/log/nexus/errors.log",
+            "filename": str(log_dir / "errors.log"),
             "maxBytes": 52428800,  # 50MB
             "backupCount": 20,
             "encoding": "utf-8",

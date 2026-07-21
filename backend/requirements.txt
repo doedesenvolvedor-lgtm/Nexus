@@ -1,11 +1,11 @@
-fastapi
+fastapi>=0.139,<1.0
 uvicorn[standard]
 sqlalchemy
 psycopg2-binary
 python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
-pydantic
+pydantic>=2.13,<3.0
 email-validator
 python-dotenv
 redis

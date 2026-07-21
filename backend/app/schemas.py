@@ -101,7 +101,7 @@ class ProfileCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     avatar_url: Optional[str] = Field(None, max_length=500)
     is_kids: bool = False
-    pin_code: Optional[str] = Field(None, regex=r'^\d{4}$')  # 4 dígitos
+    pin_code: Optional[str] = Field(None, pattern=r'^\d{4}$')  # 4 dígitos
 
 
 class ProfileResponse(BaseModel):
@@ -118,11 +118,11 @@ class ProfileResponse(BaseModel):
 class MediaCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     description: str = Field(..., min_length=10, max_length=2000)
-    content_type: str = Field(..., regex=r'^(movie|series|documentary|special)$')
+    content_type: str = Field(..., pattern=r'^(movie|series|documentary|special)$')
     genre: str = Field(..., min_length=2, max_length=50)
     release_year: int = Field(..., ge=1900, le=2100)
     duration: int = Field(..., gt=0, le=14400)  # até 4 horas em segundos
-    rating: str = Field(..., regex=r'^(G|PG|PG-13|R|NC-17|L| 10|12|14|16|18)$')
+    rating: str = Field(..., pattern=r'^(G|PG|PG-13|R|NC-17|L| 10|12|14|16|18)$')
     thumbnail_url: str = Field(..., max_length=500)
     banner_url: str = Field(..., max_length=500)
     trailer_url: Optional[str] = Field(None, max_length=500)

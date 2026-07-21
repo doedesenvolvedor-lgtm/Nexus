@@ -5,7 +5,7 @@ import {
   FiTrendingUp,
   FiDollarSign,
   FiPlay,
-  FiTV,
+  FiTv,
   FiZap,
   FiCpu,
   FiGlobe,
@@ -143,7 +143,7 @@ const Dashboard = () => {
               color="primary"
             />
             <StatCard
-              icon={FiTV}
+              icon={FiTv}
               title="Séries"
               value="456"
               color="secondary"

@@ -1,6 +1,6 @@
 import React from 'react'
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { theme } from '../../theme'
+import { theme } from '../theme'
 
 export const SimpleBarChart = ({ data, title, xKey, yKey, color = theme.colors.primary, className = '' }) => {
   return (
