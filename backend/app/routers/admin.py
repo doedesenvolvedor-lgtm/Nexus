@@ -2,6 +2,7 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from uuid import uuid4
 
+import magic
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
@@ -19,6 +20,14 @@ UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024  # 2GB
 ALLOWED_UPLOAD_EXTENSIONS = {".mp4", ".mkv", ".mov", ".webm", ".avi"}
+ALLOWED_MIME_TYPES = {
+    "video/mp4",
+    "video/x-matroska",
+    "video/quicktime",
+    "video/webm",
+    "video/x-msvideo",
+    "application/octet-stream",  # alguns MKV podem vir como octet-stream
+}
 
 
 @router.get("/dashboard")
@@ -79,7 +88,11 @@ def users(
     status: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ):
-    query = db.query(User).order_by(User.created_at.desc())
+    from sqlalchemy.orm import joinedload
+    
+    query = db.query(User).options(
+        joinedload(User.subscriptions)
+    ).order_by(User.created_at.desc())
 
     if search:
         normalized_search = f"%{search.strip().lower()}%"
@@ -92,12 +105,12 @@ def users(
     data: list[AdminUserResponse] = []
 
     for user in user_rows:
-        latest_subscription = (
-            db.query(Subscription)
-            .filter(Subscription.user_id == user.id)
-            .order_by(Subscription.created_at.desc())
-            .first()
-        )
+        # Subscription já carregada via joinedload
+        latest_subscription = None
+        if user.subscriptions:
+            # subscriptions já ordenado, pegar o mais recente
+            sorted_subs = sorted(user.subscriptions, key=lambda s: s.created_at, reverse=True)
+            latest_subscription = sorted_subs[0] if sorted_subs else None
 
         plan_value = (latest_subscription.plan or "free") if latest_subscription else "free"
         status_value = (
@@ -331,8 +344,26 @@ def send_announcement_email(
 
 
 @router.get("/catalog")
-def catalog(db: Session = Depends(get_db)):
-    return db.query(MediaContent).all()
+def catalog(
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=50, ge=1, le=200),
+    content_type: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    query = db.query(MediaContent).order_by(MediaContent.title)
+    
+    if content_type:
+        query = query.filter(MediaContent.content_type == content_type)
+    
+    total = query.count()
+    items = query.offset((page - 1) * limit).limit(limit).all()
+    
+    return {
+        "data": items,
+        "total": total,
+        "page": page,
+        "limit": limit,
+    }
 
 
 @router.delete("/catalog/{media_id}")
@@ -352,6 +383,16 @@ async def upload_video(file: UploadFile = File(...), db: Session = Depends(get_d
     extension = Path(original_name).suffix.lower()
     if extension not in ALLOWED_UPLOAD_EXTENSIONS:
         raise HTTPException(status_code=400, detail="Formato de vídeo não permitido.")
+
+    # Validar MIME type real do arquivo
+    header_bytes = await file.read(2048)
+    await file.seek(0)
+    mime_type = magic.from_buffer(header_bytes, mime=True)
+    if mime_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tipo de arquivo não permitido: {mime_type}",
+        )
 
     path = UPLOAD_DIR / f"{uuid4()}_{original_name}"
     total_written = 0

@@ -1,57 +1,84 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 
 import '../utils/constants.dart';
+import '../utils/error_handler.dart';
 
 class AuthResponse {
   final bool success;
   final String message;
   final String? token;
+  final String? refreshToken;
 
   const AuthResponse({
     required this.success,
     required this.message,
     this.token,
+    this.refreshToken,
+  });
+}
+
+class TokenRefreshResponse {
+  final bool success;
+  final String? newToken;
+  final String? newRefreshToken;
+
+  const TokenRefreshResponse({
+    required this.success,
+    this.newToken,
+    this.newRefreshToken,
   });
 }
 
 class AuthService {
+  final Dio _dio;
+
+  AuthService() : _dio = Dio(BaseOptions(
+    baseUrl: apiUrl,
+    connectTimeout: apiTimeout,
+    receiveTimeout: apiTimeout,
+    headers: {'Content-Type': 'application/json'},
+  ));
+
   Future<AuthResponse> login(String email, String password) async {
     try {
-      final response = await http.post(
-        Uri.parse('$apiUrl/auth/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
+      final response = await _dio.post(
+        '/auth/login',
+        data: {'email': email, 'password': password},
       );
 
-      final data = _decodeBody(response.body);
       if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
         final token = data['access_token'] as String?;
+        final refreshToken = data['refresh_token'] as String?;
+
         if (token == null || token.isEmpty) {
           return const AuthResponse(
             success: false,
-            message: 'Resposta inválida do servidor.',
+            message: 'Resposta invalida do servidor.',
           );
         }
 
-        return const AuthResponse(
+        return AuthResponse(
           success: true,
           message: 'Login realizado com sucesso.',
-        ).copyWith(token: token);
+          token: token,
+          refreshToken: refreshToken,
+        );
       }
 
       return AuthResponse(
         success: false,
-        message: _extractErrorMessage(data, fallback: 'Falha ao realizar login.'),
+        message: _extractErrorMessage(response.data, fallback: 'Falha ao realizar login.'),
       );
-    } catch (_) {
+    } on DioException catch (e) {
+      final error = ErrorHandler.handleError(e);
+      return AuthResponse(success: false, message: error.userMessage);
+    } catch (e) {
       return const AuthResponse(
         success: false,
-        message: 'Não foi possível conectar ao servidor.',
+        message: 'Nao foi possivel conectar ao servidor.',
       );
     }
   }
@@ -62,73 +89,83 @@ class AuthService {
     required String username,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('$apiUrl/auth/register'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-          'username': username,
-        }),
+      final response = await _dio.post(
+        '/auth/register',
+        data: {'email': email, 'password': password, 'username': username},
       );
 
-      final data = _decodeBody(response.body);
       if (response.statusCode == 200 || response.statusCode == 201) {
         return const AuthResponse(
           success: true,
-          message: 'Cadastro realizado. Faça login para continuar.',
+          message: 'Cadastro realizado. Faca login para continuar.',
         );
       }
 
       return AuthResponse(
         success: false,
-        message: _extractErrorMessage(data, fallback: 'Falha ao realizar cadastro.'),
+        message: _extractErrorMessage(response.data, fallback: 'Falha ao realizar cadastro.'),
       );
-    } catch (_) {
+    } on DioException catch (e) {
+      final error = ErrorHandler.handleError(e);
+      return AuthResponse(success: false, message: error.userMessage);
+    } catch (e) {
       return const AuthResponse(
         success: false,
-        message: 'Não foi possível conectar ao servidor.',
+        message: 'Nao foi possivel conectar ao servidor.',
       );
     }
   }
 
-  Map<String, dynamic> _decodeBody(String body) {
+  Future<TokenRefreshResponse> refreshToken(String currentRefreshToken) async {
     try {
-      final decoded = jsonDecode(body);
-      if (decoded is Map<String, dynamic>) {
-        return decoded;
+      final response = await _dio.post(
+        '/auth/refresh',
+        data: {'refresh_token': currentRefreshToken},
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        return TokenRefreshResponse(
+          success: true,
+          newToken: data['access_token'] as String?,
+          newRefreshToken: data['refresh_token'] as String?,
+        );
       }
-    } catch (_) {
-      // Ignora parsing inválido e retorna mapa vazio.
+
+      return const TokenRefreshResponse(success: false);
+    } on DioException catch (e) {
+      final error = ErrorHandler.handleError(e);
+      return TokenRefreshResponse(success: false);
+    } catch (e) {
+      return const TokenRefreshResponse(success: false);
     }
-    return {};
   }
 
-  String _extractErrorMessage(Map<String, dynamic> data, {required String fallback}) {
-    final detail = data['detail'];
-    if (detail is String && detail.isNotEmpty) {
-      return detail;
+  Future<AuthResponse> logout(String? token) async {
+    try {
+      await _dio.post(
+        '/auth/logout',
+        options: token != null
+            ? Options(headers: {'Authorization': 'Bearer $token'})
+            : null,
+      );
+    } catch (e) {
+      // Falha silenciosa no logout
     }
+    return const AuthResponse(success: true, message: 'Sessao encerrada.');
+  }
 
-    final message = data['message'];
-    if (message is String && message.isNotEmpty) {
-      return message;
+  String _extractErrorMessage(dynamic data, {required String fallback}) {
+    if (data is Map<String, dynamic>) {
+      final detail = data['detail'];
+      if (detail is String && detail.isNotEmpty) {
+        return detail;
+      }
+      final message = data['message'];
+      if (message is String && message.isNotEmpty) {
+        return message;
+      }
     }
-
     return fallback;
-  }
-}
-
-extension on AuthResponse {
-  AuthResponse copyWith({
-    bool? success,
-    String? message,
-    String? token,
-  }) {
-    return AuthResponse(
-      success: success ?? this.success,
-      message: message ?? this.message,
-      token: token ?? this.token,
-    );
   }
 }

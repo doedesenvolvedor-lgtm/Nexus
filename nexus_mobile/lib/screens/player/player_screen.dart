@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../models/media.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/player_provider.dart';
 import '../../services/player_service.dart';
 
@@ -20,7 +21,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
   final service = PlayerService();
   Timer? saveTimer;
   int savedPosition = 0;
+  int lastSavedPosition = 0;
   bool _isLoading = true;
+  String? _profileId;
 
   @override
   void initState() {
@@ -30,16 +33,22 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   Future<void> _initialize() async {
     final media = ModalRoute.of(context)!.settings.arguments as Media;
-
+    
+    // Obter profileId real do Provider
+    final authProvider = context.read<AuthProvider>();
+    // Idealmente, usar ProfileProvider para pegar o profile ativo
+    
     controller = VideoPlayerController.networkUrl(Uri.parse(media.video))
       ..initialize().then((_) async {
-        final position = await service.getSavedPosition(media.id);
+        final position = await service.getSavedPosition(media.id, authProvider.email ?? '');
         savedPosition = position;
+        lastSavedPosition = position;
         if (mounted) {
           await controller.seekTo(Duration(seconds: savedPosition));
           setState(() {
             _isLoading = false;
           });
+          controller.play();
         }
       });
 
@@ -49,10 +58,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
       }
 
       final seconds = controller.value.position.inSeconds;
-      if (seconds % 5 == 0 && seconds != savedPosition) {
-        savedPosition = seconds;
+      // Salvar apenas quando avançar mais de 30 segundos da última posição salva
+      if ((seconds - lastSavedPosition).abs() >= 30 && seconds != lastSavedPosition) {
+        lastSavedPosition = seconds;
         service.saveProgress(
-          profileId: 'demo-profile',
+          profileId: authProvider.email ?? 'demo-profile',
           mediaId: media.id,
           seconds: seconds,
         );
@@ -62,6 +72,18 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   void dispose() {
+    // Salvar posição final ao sair
+    if (lastSavedPosition > 0) {
+      final media = ModalRoute.of(context)?.settings.arguments as Media?;
+      if (media != null) {
+        final authProvider = context.read<AuthProvider>();
+        service.saveProgress(
+          profileId: authProvider.email ?? 'demo-profile',
+          mediaId: media.id,
+          seconds: lastSavedPosition,
+        );
+      }
+    }
     saveTimer?.cancel();
     controller.dispose();
     super.dispose();

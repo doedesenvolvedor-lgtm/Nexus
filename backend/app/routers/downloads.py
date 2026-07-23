@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, Response
@@ -10,9 +11,17 @@ RELEASES_DIR = Path("storage/releases")
 
 
 def _safe_apk_path(filename: str) -> Path:
+    # Resolve caminho absoluto e verifica se está dentro do diretório permitido
     candidate = (RELEASES_DIR / filename).resolve()
-    releases_root = RELEASES_DIR.resolve()
-    if candidate.parent != releases_root or candidate.suffix.lower() != ".apk":
+    releases_root = RELEASES_DIR.resolve(strict=False)
+    
+    # Verificação adicional contra symlink attacks
+    real_candidate = os.path.realpath(candidate)
+    real_releases = os.path.realpath(releases_root)
+    
+    if not real_candidate.startswith(real_releases + "/") and real_candidate != real_releases:
+        raise HTTPException(status_code=400, detail="Arquivo inválido")
+    if candidate.suffix.lower() != ".apk":
         raise HTTPException(status_code=400, detail="Arquivo inválido")
     return candidate
 

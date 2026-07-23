@@ -30,13 +30,13 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
-  String? _validatePassword(String? value) {
+String? _validatePassword(String? value) {
     final text = value ?? '';
     if (text.isEmpty) {
       return 'Informe sua senha.';
     }
-    if (text.length < 6) {
-      return 'A senha deve ter pelo menos 6 caracteres.';
+    if (text.length < 12) {
+      return 'A senha deve ter pelo menos 12 caracteres.';
     }
     return null;
   }

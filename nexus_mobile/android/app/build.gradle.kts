@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -25,9 +26,9 @@ android {
     signingConfigs {
         create("release") {
             keyAlias = System.getenv("KEYSTORE_ALIAS") ?: "nexus_key"
-            keyPassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
-            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "keystore/nexus.jks")
-            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
+            keyPassword = System.getenv("KEYSTORE_PASSWORD") ?: "nexus_release"
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "${rootProject.projectDir}/keystore/nexus.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "nexus_release"
         }
     }
 

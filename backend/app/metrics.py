@@ -1,7 +1,14 @@
+"""
+Métricas Prometheus para monitoramento da aplicação.
+Middleware usa BaseHTTPMiddleware do Starlette para compatibilidade ASGI correta.
+"""
+
 from prometheus_client import Counter, Histogram, Gauge
-from fastapi import Request
 from time import time
 import logging
+
+from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi import Request
 
 logger = logging.getLogger(__name__)
 
@@ -99,40 +106,28 @@ tmdb_sync_operations = Counter(
 )
 
 
-class PrometheusMiddleware:
-    """Middleware para coletar métricas do Prometheus."""
+class PrometheusMiddleware(BaseHTTPMiddleware):
+    """Middleware para coletar métricas do Prometheus.
+    Usa BaseHTTPMiddleware do Starlette para compatibilidade ASGI correta.
+    """
 
-    def __init__(self, app):
-        self.app = app
-
-    async def __call__(self, scope, receive, send):
-        if scope["type"] != "http":
-            await self.app(scope, receive, send)
-            return
-
+    async def dispatch(self, request: Request, call_next):
         # Skip para endpoints de métricas
-        if scope["path"] == "/metrics":
-            await self.app(scope, receive, send)
-            return
+        if request.url.path == "/metrics":
+            return await call_next(request)
 
-        request = Request(scope)
         start_time = time()
         status_code = 500
 
-        async def send_wrapper(message):
-            nonlocal status_code
-            if message["type"] == "http.response.start":
-                status_code = message["status"]
-            await send(message)
-
         try:
-            await self.app(scope, receive, send_wrapper)
+            response = await call_next(request)
+            status_code = response.status_code
+            return response
         finally:
-            # Registra a métrica
             duration = time() - start_time
-            method = scope["method"]
-            endpoint = scope["path"]
-            
+            method = request.method
+            endpoint = request.url.path
+
             http_requests_total.labels(
                 method=method,
                 endpoint=endpoint,
@@ -144,7 +139,6 @@ class PrometheusMiddleware:
                 endpoint=endpoint,
             ).observe(duration)
 
-            # Log de requisição
             logger.info(
                 f"{method} {endpoint} - {status_code} - {duration:.3f}s"
             )

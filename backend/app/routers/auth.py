@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 import secrets
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.config import ACCESS_TOKEN_EXPIRE_MINUTES
@@ -12,13 +12,14 @@ from app.models import User, Subscription
 from app.schemas import (
     ForgotPasswordRequest,
     Login,
+    RefreshTokenRequest,
     ResetPasswordRequest,
     SubscriptionResponse,
     Token,
     UserCreate,
     UserResponse,
 )
-from app.security import create_access_token, hash_password, verify_password
+from app.security import create_access_token, create_refresh_token, decode_token, hash_password, verify_password
 from app.services.auth_session_service import (
     clear_login_failures,
     is_login_locked,
@@ -101,14 +102,67 @@ def login(credentials: Login, db: Session = Depends(get_db)):
 
     clear_login_failures(credentials.email)
     jti = str(uuid4())
-    token = create_access_token({"sub": str(user.id), "email": user.email, "jti": jti})
+    token = create_access_token({"sub": str(user.id), "email": user.email})
+    refresh_token = create_refresh_token({"sub": str(user.id), "email": user.email})
     register_session(
         user_id=str(user.id),
         jti=jti,
         ttl_seconds=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
 
-    return {"access_token": token, "token_type": "bearer"}
+    return {
+        "access_token": token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+    }
+
+
+@router.post("/refresh", response_model=Token)
+def refresh_token(request: RefreshTokenRequest, db: Session = Depends(get_db)):
+    """Gera um novo access token usando refresh token."""
+    try:
+        payload = decode_token(request.refresh_token)
+        if payload.get("type") != "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token de refresh inválido.",
+            )
+        
+        user_id = payload.get("sub")
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Usuário não encontrado.",
+            )
+
+        # Revogar sessão antiga
+        old_jti = payload.get("jti")
+        if old_jti:
+            revoke_session(str(user.id), str(old_jti))
+
+        # Criar novos tokens
+        jti = str(uuid4())
+        new_access_token = create_access_token({"sub": str(user.id), "email": user.email})
+        new_refresh_token = create_refresh_token({"sub": str(user.id), "email": user.email})
+        register_session(
+            user_id=str(user.id),
+            jti=jti,
+            ttl_seconds=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        )
+
+        return {
+            "access_token": new_access_token,
+            "refresh_token": new_refresh_token,
+            "token_type": "bearer",
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token de refresh inválido ou expirado.",
+        )
 
 
 @router.post("/logout")

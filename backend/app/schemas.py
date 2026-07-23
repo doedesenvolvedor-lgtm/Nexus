@@ -1,3 +1,4 @@
+
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
@@ -204,7 +205,18 @@ class MediaResponse(BaseModel):
 
 class Token(BaseModel):
     access_token: str
+    refresh_token: str = ""
     token_type: str = "bearer"
+
+    @field_validator("refresh_token", mode="before")
+    @classmethod
+    def ensure_refresh_token(cls, v):
+        """Garante que refresh_token nunca seja None."""
+        return v or ""
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str = Field(..., min_length=10, description="Refresh token JWT")
 
 
 class SeasonCreate(BaseModel):

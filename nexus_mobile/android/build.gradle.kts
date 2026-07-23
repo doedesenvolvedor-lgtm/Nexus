@@ -1,9 +1,18 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.google.gms:google-services:4.4.2")
+    }
+}
+
 allprojects {
     repositories {
         google()
         mavenCentral()
     }
-    // Ensure all Android subprojects (plugins) use at least compileSdk 34
     afterEvaluate {
         extensions.findByType(com.android.build.gradle.BaseExtension::class.java)?.apply {
             val current = compileSdkVersion?.removePrefix("android-")?.toIntOrNull() ?: 0

@@ -1,34 +1,35 @@
 """
 Middleware de Rate Limiting.
 Aplica proteção contra DDoS e abuse em múltiplos níveis.
+Usa padrão ASGI correto via BaseHTTPMiddleware do Starlette para compatibilidade com FastAPI.
 """
 
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from app.services.rate_limit_service import rate_limit_service
 
 
-class RateLimitMiddleware:
+class RateLimitMiddleware(BaseHTTPMiddleware):
     """
     Middleware que aplica rate limiting baseado em:
     1. IP global
     2. Tipo de endpoint (login, streams, APIs, etc)
     3. Usuário autenticado (se logado)
+
+    Herda de BaseHTTPMiddleware para compatibilidade ASGI correta.
     """
-    
-    def __init__(self, app):
-        self.app = app
-    
-    async def __call__(self, request: Request, call_next):
+
+    async def dispatch(self, request: Request, call_next):
         # Extrair IP do cliente
         client_ip = self._get_client_ip(request)
         endpoint = request.url.path
         response_limit_info = None
-        
+
         # Rotas que não aplicam rate limit
         if self._should_skip_rate_limit(endpoint):
             return await call_next(request)
-        
+
         # ==================== VERIFICAÇÃO 1: LIMITE GLOBAL ====================
         allowed, info = rate_limit_service.check_global_limit(client_ip)
         if not allowed:
@@ -37,13 +38,14 @@ class RateLimitMiddleware:
                 "Limite global de requisições atingido (1000/hora por IP)",
             )
         response_limit_info = info
-        
+
         # ==================== VERIFICAÇÃO 2: LIMITE POR ENDPOINT ====================
         allowed, info = rate_limit_service.check_endpoint_limit(client_ip, endpoint)
         if not allowed:
             limit_type = self._get_limit_type(endpoint)
             messages = {
                 "login": "Muitas tentativas de login. Tente novamente em 15 minutos.",
+                "register": "Muitas tentativas de registro. Limite: 3 contas/hora por IP.",
                 "streams": "Muitos requests de streaming. Limite: 100 req/min",
                 "payment": "Limite de requisições de pagamento atingido.",
                 "admin": "Limite de admin atingido.",
@@ -54,9 +56,8 @@ class RateLimitMiddleware:
                 messages.get(limit_type, "Limite de requisições atingido"),
             )
         response_limit_info = info
-        
+
         # ==================== VERIFICAÇÃO 3: LIMITE POR USUÁRIO ====================
-        # Se usuário autenticado, verificar limite específico do usuário
         user_id = self._extract_user_id(request)
         if user_id:
             limit_type = self._get_limit_type(endpoint)
@@ -67,33 +68,30 @@ class RateLimitMiddleware:
                     f"Limite de {limit_type} por usuário atingido",
                 )
             response_limit_info = info
-        
+
         # Processar requisição normalmente
         response = await call_next(request)
-        
+
         if response_limit_info is not None:
             response.headers["X-RateLimit-Limit"] = str(response_limit_info.get("limit", ""))
             response.headers["X-RateLimit-Remaining"] = str(response_limit_info.get("remaining", ""))
             response.headers["X-RateLimit-Reset"] = str(response_limit_info.get("reset_in", ""))
-        
+
         return response
-    
+
     # ==================== MÉTODOS AUXILIARES ====================
-    
+
     @staticmethod
     def _get_client_ip(request: Request) -> str:
         """Extrai IP real do cliente."""
-        # Verificar headers de proxy
         if x_forwarded_for := request.headers.get("X-Forwarded-For"):
-            # Pega o primeiro IP (cliente real)
             return x_forwarded_for.split(",")[0].strip()
-        
+
         if x_real_ip := request.headers.get("X-Real-IP"):
             return x_real_ip
-        
-        # Fallback para conexão direta
+
         return request.client.host if request.client else "unknown"
-    
+
     @staticmethod
     def _extract_user_id(request: Request) -> str | None:
         """Extrai user_id do JWT token."""
@@ -101,16 +99,15 @@ class RateLimitMiddleware:
             auth_header = request.headers.get("authorization", "")
             if not auth_header.startswith("Bearer "):
                 return None
-            
+
             token = auth_header.replace("Bearer ", "")
-            
-            # Decode JWT (simplificado - use library completa em produção)
+
             from app.security import decode_token
             payload = decode_token(token)
             return payload.get("sub")
         except Exception:
             return None
-    
+
     @staticmethod
     def _should_skip_rate_limit(endpoint: str) -> bool:
         """Retorna True se endpoint não deve aplicar rate limit."""
@@ -123,13 +120,13 @@ class RateLimitMiddleware:
             "/redoc",
             "/openapi.json",
         ]
-        
+
         for path in skip_paths:
             if endpoint.startswith(path):
                 return True
-        
+
         return False
-    
+
     @staticmethod
     def _get_limit_type(endpoint: str) -> str:
         """Determina tipo de limite baseado no endpoint."""
@@ -143,7 +140,7 @@ class RateLimitMiddleware:
             return "admin"
         else:
             return "api"
-    
+
     @staticmethod
     def _rate_limit_response(info: dict, message: str) -> JSONResponse:
         """Retorna resposta 429 com rate limit headers."""

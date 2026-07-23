@@ -1,7 +1,7 @@
 name: nexustwos
 description: Nexustwos - Seu universo de entretenimento
 publish_to: 'none'
-version: 1.0.0+1
+version: 2.1.0+3
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -24,6 +24,8 @@ dependencies:
   
   # Local Storage
   shared_preferences: ^2.2.2
+  flutter_secure_storage: ^9.2.2
+  path_provider: ^2.1.0
   
   # Video Player
   video_player: ^2.8.2
@@ -50,6 +52,9 @@ dependencies:
   # Animations & Gestures
   animations: ^2.0.0
   liquid_swipe: ^3.1.0
+  
+  # Connectivity
+  connectivity_plus: ^6.1.0
 
 dev_dependencies:
   flutter_test:

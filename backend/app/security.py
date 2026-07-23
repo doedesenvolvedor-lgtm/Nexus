@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta, timezone
 
 from jose import JWTError, jwt
@@ -7,6 +8,7 @@ from app.config import (
     ALGORITHM,
     ACCESS_TOKEN_EXPIRE_MINUTES,
     SECRET_KEY,
+    REFRESH_TOKEN_EXPIRE_DAYS,
 )
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -29,8 +31,29 @@ def verify_password(password: str, hashed: str):
 def create_access_token(data: dict):
     _ensure_security_config()
     payload = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    payload["exp"] = expire
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    payload.update({
+        "exp": expire,
+        "iat": now,
+        "jti": str(uuid.uuid4()),
+        "type": "access",
+    })
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def create_refresh_token(data: dict):
+    """Cria um refresh token com expiração mais longa."""
+    _ensure_security_config()
+    payload = data.copy()
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    payload.update({
+        "exp": expire,
+        "iat": now,
+        "jti": str(uuid.uuid4()),
+        "type": "refresh",
+    })
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 

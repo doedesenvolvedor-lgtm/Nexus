@@ -1,11 +1,48 @@
-FROM python:3.12-slim
+# ===== Build Stage =====
+FROM python:3.12-slim AS builder
+
+WORKDIR /build
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --user -r requirements.txt
+
+# ===== Runtime Stage =====
+FROM python:3.12-slim AS runtime
+
+# Create non-root user
+RUN groupadd -r nexus && useradd -r -g nexus nexus
 
 WORKDIR /app
 
-COPY requirements.txt ./
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libmagic1 \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy installed packages from builder
+COPY --from=builder /root/.local /usr/local/
 
+# Copy application code
 COPY . .
+
+# Create required directories
+RUN mkdir -p /var/log/nexus storage/streams storage/releases uploads && \
+    chown -R nexus:nexus /var/log/nexus storage uploads
+
+# Switch to non-root user
+USER nexus
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import http.client; conn=http.client.HTTPConnection('localhost:8000'); conn.request('GET','/health'); resp=conn.getresponse(); exit(0) if resp.status==200 else exit(1)"
+
+EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

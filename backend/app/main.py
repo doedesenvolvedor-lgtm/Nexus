@@ -1,17 +1,19 @@
 from pathlib import Path
 import logging
+import uuid
 
 from fastapi import FastAPI
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import text
 
 from app.database import Base, engine
 from app.database import SessionLocal
 from app.logging_config import setup_logging
-from app.config import FRONTEND_URL, ADMIN_FRONTEND_URL
+from app.config import FRONTEND_URL, ADMIN_FRONTEND_URL, SECRET_KEY
 from app.exception_handlers import register_exception_handlers
 from app.metrics import PrometheusMiddleware
 from app.middleware.stream_auth import StreamAuthMiddleware
@@ -23,9 +25,13 @@ from app.routers import admin, auth, downloads, episodes, history, media, notifi
 setup_logging()
 logger = logging.getLogger(__name__)
 
+# Validar SECRET_KEY na inicialização
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY não configurada. Defina a variável de ambiente SECRET_KEY antes de iniciar o servidor.")
+
 app = FastAPI(
     title="Nexus Twos",
-    version="1.0",
+    version="2.0",
 )
 
 # ===== CORS Configuration =====
@@ -42,17 +48,20 @@ app.add_middleware(
     allow_origins=[origin for origin in allowed_origins if origin],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],  # Métodos específicos, não wildcard
-    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "Accept"],  # Headers específicos
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-Idempotency-Key", "X-Stream-Token", "Accept"],  # Headers específicos
     max_age=3600,  # Cache preflight por 1 hora
 )
 
 # Registra exception handlers
 register_exception_handlers(app)
 
-# Adiciona middlewares (última adição = primeira execução)
-app.add_middleware(StreamAuthMiddleware)        # 3º: Valida tokens de stream
-app.add_middleware(RateLimitMiddleware)         # 2º: Verifica rate limits
-app.add_middleware(PrometheusMiddleware)        # 1º: Coleta métricas
+# Adiciona middlewares
+# NOTA: BaseHTTPMiddleware executa na ordem de adicao (FIFO)
+# PrometheusMiddleware deve ser o PRIMEIRO a capturar metrics
+# RateLimitMiddleware deve vir antes de StreamAuthMiddleware para proteger tambem streams
+app.add_middleware(PrometheusMiddleware)
+app.add_middleware(RateLimitMiddleware)
+app.add_middleware(StreamAuthMiddleware)
 
 try:
     Base.metadata.create_all(bind=engine)

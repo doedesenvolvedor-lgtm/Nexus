@@ -194,101 +194,14 @@ async def webhook_mercadopago(
     db: Session = Depends(get_db),
 ):
     """
-    Webhook do MercadoPago para notificações de pagamento
-    """
+    Webhook do MercadoPago para notificações de pagamento.
+    Este endpoint é mantido para compatibilidade reversa.
+    O processamento principal ocorre via /webhook/mercadopago.
     
-    if not MERCADOPAGO_WEBHOOK_SECRET:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Webhook MercadoPago não configurado.",
-        )
-
-    try:
-        raw_body = await request.body()
-        x_signature = request.headers.get("X-Signature")
-        x_request_id = request.headers.get("X-Request-ID")
-
-        is_valid = WebhookValidator.validate_mercadopago_signature(
-            x_signature=x_signature,
-            x_request_id=x_request_id,
-            body=raw_body,
-            webhook_secret=MERCADOPAGO_WEBHOOK_SECRET,
-        )
-        if not is_valid:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Assinatura de webhook inválida",
-            )
-
-        body = await request.json()
-        
-        # Se for notificação de pagamento
-        if body.get("type") == "payment":
-            payment_id = body.get("data", {}).get("id")
-            
-            if not payment_id:
-                return {"status": "error"}
-            
-            mp_service = get_mercadopago_service()
-            payment_info = mp_service.get_payment_status(str(payment_id))
-            
-            # Encontrar pagamento pelo external_reference
-            external_ref = payment_info.get("external_reference")
-            if external_ref and "_plan_" in external_ref:
-                # Parse: user_{user_id}_plan_{plan}
-                user_id_str = external_ref.split("_plan_")[0].replace("user_", "")
-                plan = external_ref.split("_plan_")[1]
-                user_id = UUID(user_id_str)
-                
-                # Atualizar pagamento no BD
-                payment = db.query(Payment).filter(
-                    Payment.user_id == user_id
-                ).order_by(Payment.created_at.desc()).first()
-                
-                if payment:
-                    previous_status = payment.status
-                    if payment_info["status"] == "approved":
-                        payment.status = "approved"
-                        payment.payment_id = str(payment_id)
-                        
-                        # Atualizar subscription
-                        subscription = db.query(Subscription).filter(
-                            Subscription.user_id == user_id
-                        ).first()
-                        
-                        if subscription:
-                            subscription.plan_type = plan
-                            subscription.status = "active"
-                            subscription.updated_at = datetime.utcnow()
-
-                        if previous_status != "approved":
-                            user = db.query(User).filter(User.id == user_id).first()
-                            if user:
-                                get_email_service().send_payment_receipt_email(
-                                    to_email=user.email,
-                                    plan=payment.plan or plan,
-                                    amount=payment.amount,
-                                    payment_id=str(payment_id),
-                                    status="approved",
-                                )
-                        
-                    elif payment_info["status"] == "rejected":
-                        payment.status = "rejected"
-                    
-                    elif payment_info["status"] == "pending":
-                        payment.status = "pending"
-                    
-                    payment.updated_at = datetime.utcnow()
-                    db.commit()
-
-        return {"status": "ok"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erro ao processar webhook: {str(e)}",
-        )
+    Redireciona para o processador unificado.
+    """
+    from app.routers.webhooks import mercadopago_webhook as unified_webhook
+    return await unified_webhook(request, db)
 
 
 @router.get("/me/history")

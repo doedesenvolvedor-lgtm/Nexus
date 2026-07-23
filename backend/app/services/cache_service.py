@@ -1,6 +1,5 @@
 import json
 import logging
-from functools import lru_cache
 from typing import Any
 
 import redis
@@ -10,22 +9,23 @@ from app.config import REDIS_URL
 logger = logging.getLogger(__name__)
 
 
-@lru_cache(maxsize=1)
-def _redis_client() -> redis.Redis:
-    return redis.Redis.from_url(
-        REDIS_URL,
-        decode_responses=True,
-        socket_connect_timeout=1,
-        socket_timeout=1,
-    )
+# Connection pool global - evita memory leak do @lru_cache
+_connection_pool = redis.ConnectionPool.from_url(
+    REDIS_URL,
+    decode_responses=True,
+    socket_connect_timeout=2,
+    socket_timeout=2,
+    max_connections=20,
+)
 
 
 def _get_client() -> redis.Redis | None:
     try:
-        client = _redis_client()
+        client = redis.Redis(connection_pool=_connection_pool)
         client.ping()
         return client
     except Exception:
+        logger.warning("Redis indisponível, operação de cache ignorada.")
         return None
 
 
@@ -86,3 +86,25 @@ def delete_by_prefix(prefix: str) -> None:
             client.delete(*keys)
     except Exception:
         logger.exception("Erro ao invalidar cache Redis com prefixo %s", prefix)
+
+
+def acquire_lock(lock_key: str, ttl_seconds: int = 30) -> bool:
+    """Tenta adquirir um lock distribuído via Redis (NX + EX)."""
+    client = _get_client()
+    if client is None:
+        return True  # fail open
+    try:
+        return bool(client.set(lock_key, "1", nx=True, ex=ttl_seconds))
+    except Exception:
+        return True
+
+
+def release_lock(lock_key: str) -> None:
+    """Libera um lock distribuído."""
+    client = _get_client()
+    if client is None:
+        return
+    try:
+        client.delete(lock_key)
+    except Exception:
+        pass

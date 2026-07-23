@@ -1,8 +1,10 @@
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, get_optional_user
 from app.models import MediaContent, User
 from app.security_admin import get_admin_user
 from app.schemas import MediaCreate, MediaResponse

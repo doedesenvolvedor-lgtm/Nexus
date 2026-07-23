@@ -19,16 +19,30 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializar Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Inicializar Firebase com fallback seguro
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    debugPrint('Firebase initialized successfully');
+  } catch (e) {
+    // Firebase não configurado - app funciona sem notificações push
+    debugPrint('Firebase initialization skipped: $e');
+  }
 
-  // Inicializar NotificationService
-  await NotificationService().initialize();
+  // Inicializar NotificationService com fallback
+  try {
+    await NotificationService().initialize();
+  } catch (e) {
+    debugPrint('NotificationService initialization skipped: $e');
+  }
 
-  // Inicializar notificações de trial
-  await TrialNotificationService.initialize();
+  // Inicializar notificações de trial com fallback
+  try {
+    await TrialNotificationService.initialize();
+  } catch (e) {
+    debugPrint('TrialNotificationService initialization skipped: $e');
+  }
 
   runApp(
     MultiProvider(
