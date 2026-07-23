@@ -195,10 +195,10 @@ class _PlansScreenState extends State<PlansScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.1),
+                  color: Colors.blue.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Colors.blue.withValues(alpha: 0.3),
+                    color: Colors.blue.withOpacity(0.3),
                   ),
                 ),
                 child: const Row(
@@ -249,17 +249,17 @@ class _PlansScreenState extends State<PlansScreen> {
                 ? Colors.purple
                 : isPopular
                     ? Colors.amber
-                    : Colors.white.withValues(alpha: 0.2),
+                    : Colors.white.withOpacity(0.2),
             width: isSelected || isPopular ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(16),
           color: isSelected
-              ? Colors.purple.withValues(alpha: 0.2)
-              : Colors.white.withValues(alpha: 0.05),
+              ? Colors.purple.withOpacity(0.2)
+              : Colors.white.withOpacity(0.05),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.purple.withValues(alpha: 0.3),
+                    color: Colors.purple.withOpacity(0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 5),
                   ),

@@ -40,7 +40,6 @@ class _TrialStatusScreenState extends State<TrialStatusScreen> {
 
         if (difference.isNegative) {
           timer.cancel();
-          // Trial expirou
           _showTrialExpiredDialog();
         } else {
           setState(() {
@@ -105,8 +104,6 @@ class _TrialStatusScreenState extends State<TrialStatusScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 20),
-
-                  // Contador regressivo circular
                   Center(
                     child: Container(
                       width: 200,
@@ -121,7 +118,7 @@ class _TrialStatusScreenState extends State<TrialStatusScreen> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.purple.withValues(alpha: 0.5),
+                            color: Colors.purple.withOpacity(0.5),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -153,57 +150,37 @@ class _TrialStatusScreenState extends State<TrialStatusScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 40),
-
-                  // Dias restantes
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: Colors.white10,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                      border: Border.all(color: Colors.white.withOpacity(0.2)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _InfoBox(
-                          label: 'Dias',
-                          value: trialProvider.daysRemaining.toString(),
-                        ),
-                        _InfoBox(
-                          label: 'Horas',
-                          value: _hours.toString(),
-                        ),
-                        _InfoBox(
-                          label: 'Minutos',
-                          value: _minutes.toString(),
-                        ),
+                        _InfoBox(label: 'Dias', value: trialProvider.daysRemaining.toString()),
+                        _InfoBox(label: 'Horas', value: _hours.toString()),
+                        _InfoBox(label: 'Minutos', value: _minutes.toString()),
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 30),
-
-                  // Informação de término
                   if (trialProvider.trialEndsAt != null)
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withValues(alpha: 0.1),
+                        color: Colors.amber.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.amber.withValues(alpha: 0.3),
-                        ),
+                        border: Border.all(color: Colors.amber.withOpacity(0.3)),
                       ),
                       child: Column(
                         children: [
                           const Text(
                             '⏰ Seu trial termina em',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.amber,
-                            ),
+                            style: TextStyle(fontSize: 14, color: Colors.amber),
                           ),
                           const SizedBox(height: 8),
                           Text(
@@ -217,10 +194,7 @@ class _TrialStatusScreenState extends State<TrialStatusScreen> {
                         ],
                       ),
                     ),
-
                   const SizedBox(height: 30),
-
-                  // Planos disponíveis
                   const Text(
                     'Escolha seu plano',
                     style: TextStyle(
@@ -229,18 +203,14 @@ class _TrialStatusScreenState extends State<TrialStatusScreen> {
                       color: Colors.white,
                     ),
                   ),
-
                   const SizedBox(height: 16),
-
                   _PlanCard(
                     name: 'Basic',
                     price: 'R\$ 15',
                     period: '/mês',
                     onTap: () => _upgradePlan(trialProvider, 'Basic'),
                   ),
-
                   const SizedBox(height: 12),
-
                   _PlanCard(
                     name: 'Standard',
                     price: 'R\$ 25',
@@ -248,16 +218,13 @@ class _TrialStatusScreenState extends State<TrialStatusScreen> {
                     onTap: () => _upgradePlan(trialProvider, 'Standard'),
                     isPopular: true,
                   ),
-
                   const SizedBox(height: 12),
-
                   _PlanCard(
                     name: 'Premium',
                     price: 'R\$ 40',
                     period: '/mês',
                     onTap: () => _upgradePlan(trialProvider, 'Premium'),
                   ),
-
                   const SizedBox(height: 40),
                 ],
               ),
@@ -288,15 +255,9 @@ class _TrialStatusScreenState extends State<TrialStatusScreen> {
     );
 
     if (confirmed == true) {
-      if (!mounted) {
-        return;
-      }
-
-      // Aqui você faria a requisição real com o token
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Upgrade para $plan iniciado...'),
-        ),
+        SnackBar(content: Text('Upgrade para $plan iniciado...')),
       );
     }
   }
@@ -308,7 +269,6 @@ class _TrialStatusScreenState extends State<TrialStatusScreen> {
         : days == 1
             ? 'amanhã'
             : 'em $days dias';
-
     return '$suffix às ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
@@ -319,42 +279,26 @@ class _TrialStatusScreenState extends State<TrialStatusScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              '😢',
-              style: TextStyle(fontSize: 80),
-            ),
+            const Text('😢', style: TextStyle(fontSize: 80)),
             const SizedBox(height: 20),
             const Text(
               'Seu Trial Expirou',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const SizedBox(height: 12),
             const Text(
               'Escolha um plano para continuar assistindo seus filmes e séries favoritos.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 40),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pushNamed('/plans'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.purple.shade600,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 40,
-                  vertical: 16,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
               ),
-              child: const Text(
-                'VER PLANOS',
-                style: TextStyle(fontSize: 16),
-              ),
+              child: const Text('VER PLANOS', style: TextStyle(fontSize: 16)),
             ),
           ],
         ),
@@ -366,11 +310,7 @@ class _TrialStatusScreenState extends State<TrialStatusScreen> {
 class _InfoBox extends StatelessWidget {
   final String label;
   final String value;
-
-  const _InfoBox({
-    required this.label,
-    required this.value,
-  });
+  const _InfoBox({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -378,20 +318,10 @@ class _InfoBox extends StatelessWidget {
       children: [
         Text(
           value.padLeft(2, '0'),
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
         ),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-          ),
-        ),
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
       ],
     );
   }
@@ -403,7 +333,6 @@ class _PlanCard extends StatelessWidget {
   final String period;
   final VoidCallback onTap;
   final bool isPopular;
-
   const _PlanCard({
     required this.name,
     required this.price,
@@ -420,11 +349,11 @@ class _PlanCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           border: Border.all(
-            color: isPopular ? Colors.purple : Colors.white.withValues(alpha: 0.2),
+            color: isPopular ? Colors.purple : Colors.white.withOpacity(0.2),
             width: isPopular ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
-          color: isPopular ? Colors.purple.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
+          color: isPopular ? Colors.purple.withOpacity(0.2) : Colors.white.withOpacity(0.05),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -434,27 +363,14 @@ class _PlanCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                    Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                     if (isPopular)
                       const Padding(
                         padding: EdgeInsets.only(left: 8.0),
                         child: Chip(
-                          label: Text(
-                            'Popular',
-                            style: TextStyle(fontSize: 10),
-                          ),
+                          label: Text('Popular', style: TextStyle(fontSize: 10)),
                           backgroundColor: Colors.purple,
-                          labelPadding: EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 0,
-                          ),
+                          labelPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 0),
                         ),
                       ),
                   ],
@@ -463,30 +379,14 @@ class _PlanCard extends StatelessWidget {
                 RichText(
                   text: TextSpan(
                     children: [
-                      TextSpan(
-                        text: price,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.purple,
-                        ),
-                      ),
-                      TextSpan(
-                        text: period,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                        ),
-                      ),
+                      TextSpan(text: price, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.purple)),
+                      TextSpan(text: period, style: const TextStyle(fontSize: 14, color: Colors.grey)),
                     ],
                   ),
                 ),
               ],
             ),
-            const Icon(
-              Icons.arrow_forward,
-              color: Colors.grey,
-            ),
+            const Icon(Icons.arrow_forward, color: Colors.grey),
           ],
         ),
       ),

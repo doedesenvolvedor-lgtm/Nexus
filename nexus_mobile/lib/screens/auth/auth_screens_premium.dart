@@ -575,8 +575,8 @@ class _RegisterScreenPremiumState extends State<RegisterScreenPremium>
                           onChanged: (value) {
                             setState(() => _agreeToTerms = value ?? false);
                           },
-                          fillColor: MaterialStateProperty.resolveWith((states) {
-                            if (states.contains(MaterialState.selected)) {
+                          fillColor: WidgetStateProperty.resolveWith((states) {
+                            if (states.contains(WidgetState.selected)) {
                               return AppColors.primaryPurple;
                             }
                             return Colors.transparent;

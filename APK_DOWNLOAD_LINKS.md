@@ -1,4 +1,4 @@
-# 📥 Downloads - NexusTwos v2.1.0
+]# 📥 Downloads - NexusTwos v2.1.0
 
 ## Última Versão: 2.1.0+3 (23/07/2026)
 
@@ -9,14 +9,16 @@
 | APK Release | [nexus-app.apk](./backend/storage/releases/nexus-app.apk) | 56 MB |
 | Android App Bundle | [nexus-app.aab](./backend/storage/releases/nexus-app.aab) | 57 MB |
 
-### 🔗 Links para Download
+### 🔗 Links para Download (Atualizados)
 
-- **APK Release**: [Clique aqui para baixar o APK](./backend/storage/releases/nexus-app.apk)
-- **AAB Release**: [Clique aqui para baixar o AAB](./backend/storage/releases/nexus-app.aab)
+- **APK Release**: [Baixar APK - v2.1.0](http://localhost:8080/releases/nexus-app.apk) ✅
+- **AAB Release**: [Baixar AAB - v2.1.0](http://localhost:8080/releases/nexus-app.aab) ✅
 
-> **Links diretos:** 
-> - `./backend/storage/releases/nexus-app.apk`
-> - `./backend/storage/releases/nexus-app.aab`
+> **Links diretos (porta 8080):** 
+> - `http://localhost:8080/releases/nexus-app.apk`
+> - `http://localhost:8080/releases/nexus-app.aab`
+
+> 💡 **Acesse pelo navegador:** [http://localhost:8080/releases/](http://localhost:8080/releases/)
 
 ---
 

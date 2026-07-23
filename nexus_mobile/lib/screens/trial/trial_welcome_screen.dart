@@ -106,7 +106,7 @@ class _TrialWelcomeScreenState extends State<TrialWelcomeScreen> {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.amber.withValues(alpha: 0.4),
+                              color: Colors.amber.withOpacity(0.4),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             ),
@@ -144,7 +144,7 @@ class _TrialWelcomeScreenState extends State<TrialWelcomeScreen> {
                           color: Colors.white10,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
+                            color: Colors.white.withOpacity(0.2),
                           ),
                         ),
                         child: const Column(
