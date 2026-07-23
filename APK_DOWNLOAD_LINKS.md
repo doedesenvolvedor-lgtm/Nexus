@@ -1,4 +1,4 @@
-]# 📥 Downloads - NexusTwos v2.1.0
+# 📥 Downloads - NexusTwos v2.1.0
 
 ## Última Versão: 2.1.0+3 (23/07/2026)
 
@@ -6,19 +6,17 @@
 
 | Artefato | Arquivo | Tamanho |
 |---|---|---|
-| APK Release | [nexus-app.apk](./backend/storage/releases/nexus-app.apk) | 56 MB |
-| Android App Bundle | [nexus-app.aab](./backend/storage/releases/nexus-app.aab) | 57 MB |
+| APK Release | [app-release.apk](./nexus_mobile/build/app/outputs/flutter-apk/app-release.apk) | 56 MB |
+| Android App Bundle | [app-release.aab](./nexus_mobile/build/app/outputs/bundle/release/app-release.aab) | 57 MB |
 
 ### 🔗 Links para Download (Atualizados)
 
-- **APK Release**: [Baixar APK - v2.1.0](http://localhost:8080/releases/nexus-app.apk) ✅
-- **AAB Release**: [Baixar AAB - v2.1.0](http://localhost:8080/releases/nexus-app.aab) ✅
+- **APK Release**: [Baixar APK - v2.1.0+3](./nexus_mobile/build/app/outputs/flutter-apk/app-release.apk) ✅
+- **AAB Release**: [Baixar AAB - v2.1.0+3](./nexus_mobile/build/app/outputs/bundle/release/app-release.aab) ✅
 
-> **Links diretos (porta 8080):** 
-> - `http://localhost:8080/releases/nexus-app.apk`
-> - `http://localhost:8080/releases/nexus-app.aab`
-
-> 💡 **Acesse pelo navegador:** [http://localhost:8080/releases/](http://localhost:8080/releases/)
+> **Caminhos diretos:** 
+> - `nexus_mobile/build/app/outputs/flutter-apk/app-release.apk`
+> - `nexus_mobile/build/app/outputs/bundle/release/app-release.aab`
 
 ---
 
@@ -43,4 +41,7 @@
 - ✅ Correção de middlewares ASGI
 - ✅ Melhorias de segurança
 - ✅ Unificação de webhooks
-</create_file>
+- ✅ withValues(alpha:) → withOpacity() em todos os arquivos
+- ✅ MaterialStateProperty → WidgetStateProperty
+- ✅ AuthService migrado para Dio
+- ✅ 51/51 testes passando
