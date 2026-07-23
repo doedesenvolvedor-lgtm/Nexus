@@ -9,10 +9,14 @@
 | APK Release | [nexus-app.apk](./backend/storage/releases/nexus-app.apk) | 56 MB |
 | Android App Bundle | [nexus-app.aab](./backend/storage/releases/nexus-app.aab) | 57 MB |
 
-### 🔗 Links Públicos (quando em produção)
+### 🔗 Links para Download
 
-- **APK**: `https://api.nexustwos.com/releases/nexus-app.apk`
-- **AAB**: `https://api.nexustwos.com/releases/nexus-app.aab`
+- **APK Release**: [Clique aqui para baixar o APK](./backend/storage/releases/nexus-app.apk)
+- **AAB Release**: [Clique aqui para baixar o AAB](./backend/storage/releases/nexus-app.aab)
+
+> **Links diretos:** 
+> - `./backend/storage/releases/nexus-app.apk`
+> - `./backend/storage/releases/nexus-app.aab`
 
 ---
 
