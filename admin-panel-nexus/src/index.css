@@ -118,3 +118,18 @@ select:focus {
   background: linear-gradient(90deg, #151515 25%, #2A2A2A 50%, #151515 75%);
   background-size: 1000px 100%;
 }
+
+/* CSSLogo Animations */
+@keyframes nexusPulse {
+  0%, 100% {
+    box-shadow: 0 0 16px #a100ff, inset 0 0 40px rgba(255, 255, 255, 0.02);
+  }
+  50% {
+    box-shadow: 0 0 32px #a100ff, 0 0 48px #00cfff, inset 0 0 40px rgba(255, 255, 255, 0.04);
+  }
+}
+
+@keyframes nexusFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexustwos - Ícone Neon CSS</title>
+    <link rel="stylesheet" href="nexustwos-icon.css">
+    <style>
+        /* ── Reset & Base ── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image:
+                radial-gradient(ellipse at 30% 50%, rgba(160, 32, 240, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 50%, rgba(56, 189, 248, 0.08) 0%, transparent 60%);
+        }
+
+        /* ── Container da Demo ── */
+        .demo {
+            width: 100%;
+            max-width: 1000px;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 50px;
+        }
+
+        /* ── Hero Section ── */
+        .hero {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ff38ff, #a100ff, #0077ff, #39d7ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -1px;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: #888;
+            max-width: 500px;
+            line-height: 1.6;
+        }
+
+        /* ── Seção de Variantes ── */
+        .variants {
+            width: 100%;
+            text-align: center;
+        }
+
+        .variants h2 {
+            font-size: 1.5rem;
+            color: #666;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .variants-grid {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .variant-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .variant-item span {
+            font-size: 0.85rem;
+            color: #666;
+            font-family: 'Courier New', monospace;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 12px;
+            border-radius: 4px;
+        }
+
+        /* ── Seção de Animações ── */
+        .animations {
+            width: 100%;
+            text-align: center;
+        }
+
+        .animations h2 {
+            font-size: 1.5rem;
+            color: #666;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .animations-grid {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .animation-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .animation-item span {
+            font-size: 0.85rem;
+            color: #666;
+            font-family: 'Courier New', monospace;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 12px;
+            border-radius: 4px;
+        }
+
+        /* ── Footer ── */
+        .footer {
+            text-align: center;
+            color: #444;
+            font-size: 0.85rem;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            width: 100%;
+        }
+
+        .footer a {
+            color: #a100ff;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ── Responsivo ── */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+            .hero p {
+                font-size: 1rem;
+            }
+            .variants-grid,
+            .animations-grid {
+                gap: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo">
+        <!-- Hero Section -->
+        <div class="hero">
+            <div class="nexus-icon nexus-icon--animated nexus-icon--float">
+                <div class="nexus-icon__left"></div>
+                <div class="nexus-icon__right"></div>
+                <div class="nexus-icon__top"></div>
+                <div class="nexus-icon__bottom"></div>
+                <div class="nexus-icon__glow"></div>
+            </div>
+            <div>
+                <h1>Nexustwos</h1>
+                <p>Ícone da marca construído 100% com CSS puro — sem imagens, sem SVGs, apenas código.</p>
+            </div>
+        </div>
+
+        <!-- Variantes de Tamanho -->
+        <div class="variants">
+            <h2>📏 Variantes de Tamanho</h2>
+            <div class="variants-grid">
+                <div class="variant-item">
+                    <div class="nexus-icon nexus-icon--sm">
+                        <div class="nexus-icon__left"></div>
+                        <div class="nexus-icon__right"></div>
+                        <div class="nexus-icon__top"></div>
+                        <div class="nexus-icon__bottom"></div>
+                        <div class="nexus-icon__glow"></div>
+                    </div>
+                    <span>--sm (120px)</span>
+                </div>
+                <div class="variant-item">
+                    <div class="nexus-icon nexus-icon--md">
+                        <div class="nexus-icon__left"></div>
+                        <div class="nexus-icon__right"></div>
+                        <div class="nexus-icon__top"></div>
+                        <div class="nexus-icon__bottom"></div>
+                        <div class="nexus-icon__glow"></div>
+                    </div>
+                    <span>--md (260px)</span>
+                </div>
+                <div class="variant-item">
+                    <div class="nexus-icon nexus-icon--lg">
+                        <div class="nexus-icon__left"></div>
+                        <div class="nexus-icon__right"></div>
+                        <div class="nexus-icon__top"></div>
+                        <div class="nexus-icon__bottom"></div>
+                        <div class="nexus-icon__glow"></div>
+                    </div>
+                    <span>--lg (400px)</span>
+                </div>
+                <div class="variant-item">
+                    <div class="nexus-icon">
+                        <div class="nexus-icon__left"></div>
+                        <div class="nexus-icon__right"></div>
+                        <div class="nexus-icon__top"></div>
+                        <div class="nexus-icon__bottom"></div>
+                        <div class="nexus-icon__glow"></div>
+                    </div>
+                    <span>Padrão (520px)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Animações -->
+        <div class="animations">
+            <h2>✨ Efeitos de Animação</h2>
+            <div class="animations-grid">
+                <div class="animation-item">
+                    <div class="nexus-icon nexus-icon--sm nexus-icon--animated">
+                        <div class="nexus-icon__left"></div>
+                        <div class="nexus-icon__right"></div>
+                        <div class="nexus-icon__top"></div>
+                        <div class="nexus-icon__bottom"></div>
+                        <div class="nexus-icon__glow"></div>
+                    </div>
+                    <span>Pulse Glow</span>
+                </div>
+                <div class="animation-item">
+                    <div class="nexus-icon nexus-icon--sm nexus-icon--float">
+                        <div class="nexus-icon__left"></div>
+                        <div class="nexus-icon__right"></div>
+                        <div class="nexus-icon__top"></div>
+                        <div class="nexus-icon__bottom"></div>
+                        <div class="nexus-icon__glow"></div>
+                    </div>
+                    <span>Float</span>
+                </div>
+                <div class="animation-item">
+                    <div class="nexus-icon nexus-icon--sm nexus-icon--spin">
+                        <div class="nexus-icon__left"></div>
+                        <div class="nexus-icon__right"></div>
+                        <div class="nexus-icon__top"></div>
+                        <div class="nexus-icon__bottom"></div>
+                        <div class="nexus-icon__glow"></div>
+                    </div>
+                    <span>Spin Slow</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Nexustwos &copy; 2026 — <a href="nexustwos-icon.css">nexustwos-icon.css</a> — Ícone 100% CSS · Sem dependências</p>
+        </div>
+    </div>
+</body>
+</html>

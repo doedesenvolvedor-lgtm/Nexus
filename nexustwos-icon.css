@@ -1,0 +1,307 @@
+/* ═══════════════════════════════════════════════
+   Nexustwos Brand Icon - Pure CSS
+   Ícone neon da marca Nexustwos
+   Versão: 1.0
+   ═══════════════════════════════════════════════ */
+
+:root {
+  /* ── Cores Principais ── */
+  --nexus-magenta: #ff38ff;
+  --nexus-purple: #a100ff;
+  --nexus-deep-purple: #8000ff;
+  --nexus-blue: #0077ff;
+  --nexus-cyan: #39d7ff;
+  --nexus-white: #ffffff;
+
+  /* ── Cores de Sombra/Glow ── */
+  --nexus-glow-purple: #c300ff;
+  --nexus-glow-blue: #00cfff;
+  --nexus-glow-cyan: #48dfff;
+  --nexus-glow-violet: #8d2eff;
+
+  /* ── Fundo ── */
+  --nexus-bg-dark: #05050b;
+  --nexus-bg-black: #000000;
+
+  /* ── Dimensões do Ícone (padrão 520px) ── */
+  --nexus-icon-size: 520px;
+  --nexus-icon-radius: 70px;
+  --nexus-bar-width: 70px;
+  --nexus-bar-height: 280px;
+  --nexus-bar-top: 120px;
+}
+
+/* ── Container Principal ── */
+.nexus-icon {
+  position: relative;
+  width: var(--nexus-icon-size);
+  height: var(--nexus-icon-size);
+  border-radius: var(--nexus-icon-radius);
+  background: var(--nexus-bg-dark);
+  overflow: hidden;
+  box-shadow:
+    0 0 40px var(--nexus-purple),
+    inset 0 0 80px rgba(255, 255, 255, 0.02);
+  flex-shrink: 0;
+}
+
+/* ── Borda Neon (gradiente) ── */
+.nexus-icon::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--nexus-icon-radius);
+  padding: 2px;
+  background: linear-gradient(
+    135deg,
+    var(--nexus-magenta),
+    var(--nexus-purple),
+    var(--nexus-cyan)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  filter: blur(0.5px);
+  pointer-events: none;
+}
+
+/* ── Barra Esquerda (Roxo/Magenta) ── */
+.nexus-icon__left {
+  position: absolute;
+  left: 150px;
+  top: var(--nexus-bar-top);
+  width: var(--nexus-bar-width);
+  height: var(--nexus-bar-height);
+  background: linear-gradient(180deg, var(--nexus-magenta), var(--nexus-purple));
+  clip-path: polygon(0 0, 100% 15%, 100% 85%, 0 100%);
+  box-shadow: 0 0 25px var(--nexus-glow-purple);
+}
+
+/* ── Barra Direita (Azul/Ciano) ── */
+.nexus-icon__right {
+  position: absolute;
+  right: 150px;
+  top: var(--nexus-bar-top);
+  width: var(--nexus-bar-width);
+  height: var(--nexus-bar-height);
+  background: linear-gradient(180deg, var(--nexus-cyan), var(--nexus-blue));
+  clip-path: polygon(0 15%, 100% 0, 100% 100%, 0 85%);
+  box-shadow: 0 0 25px var(--nexus-glow-blue);
+}
+
+/* ── Diagonal Superior (Branco → Ciano) ── */
+.nexus-icon__top {
+  position: absolute;
+  left: 185px;
+  top: var(--nexus-bar-top);
+  width: 250px;
+  height: 55px;
+  background: linear-gradient(90deg, var(--nexus-white), var(--nexus-cyan));
+  transform: rotate(33deg);
+  transform-origin: left center;
+  clip-path: polygon(0 0, 100% 0, 85% 100%, 15% 100%);
+  box-shadow: 0 0 18px var(--nexus-glow-cyan);
+}
+
+/* ── Diagonal Inferior (Roxo escuro → Azul) ── */
+.nexus-icon__bottom {
+  position: absolute;
+  left: 245px;
+  top: 250px;
+  width: 250px;
+  height: 55px;
+  background: linear-gradient(90deg, var(--nexus-deep-purple), #6b45ff);
+  transform: rotate(36deg);
+  transform-origin: left center;
+  clip-path: polygon(15% 0, 85% 0, 100% 100%, 0 100%);
+  box-shadow: 0 0 18px var(--nexus-glow-violet);
+}
+
+/* ── Brilho Inferior ── */
+.nexus-icon__glow {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  height: 22px;
+  background: linear-gradient(90deg, var(--nexus-purple), var(--nexus-blue));
+  border-radius: 50%;
+  filter: blur(18px);
+  opacity: 0.9;
+}
+
+/* ═══════════════════════════════════════════════
+   Tamanhos Variantes
+   ═══════════════════════════════════════════════ */
+
+/* Pequeno (120px) */
+.nexus-icon--sm {
+  --nexus-icon-size: 120px;
+  --nexus-icon-radius: 18px;
+  --nexus-bar-width: 16px;
+  --nexus-bar-height: 64px;
+  --nexus-bar-top: 28px;
+}
+.nexus-icon--sm .nexus-icon__left { left: 35px; }
+.nexus-icon--sm .nexus-icon__right { right: 35px; }
+.nexus-icon--sm .nexus-icon__top {
+  left: 43px;
+  width: 58px;
+  height: 13px;
+  transform: rotate(33deg);
+}
+.nexus-icon--sm .nexus-icon__bottom {
+  left: 57px;
+  top: 58px;
+  width: 58px;
+  height: 13px;
+  transform: rotate(36deg);
+}
+.nexus-icon--sm .nexus-icon__glow {
+  bottom: 10px;
+  width: 50px;
+  height: 6px;
+  filter: blur(5px);
+}
+
+/* Médio (260px) */
+.nexus-icon--md {
+  --nexus-icon-size: 260px;
+  --nexus-icon-radius: 36px;
+  --nexus-bar-width: 35px;
+  --nexus-bar-height: 140px;
+  --nexus-bar-top: 60px;
+}
+.nexus-icon--md .nexus-icon__left { left: 75px; }
+.nexus-icon--md .nexus-icon__right { right: 75px; }
+.nexus-icon--md .nexus-icon__top {
+  left: 93px;
+  width: 125px;
+  height: 28px;
+  transform: rotate(33deg);
+}
+.nexus-icon--md .nexus-icon__bottom {
+  left: 123px;
+  top: 125px;
+  width: 125px;
+  height: 28px;
+  transform: rotate(36deg);
+}
+.nexus-icon--md .nexus-icon__glow {
+  bottom: 20px;
+  width: 110px;
+  height: 12px;
+  filter: blur(10px);
+}
+
+/* Grande (400px) */
+.nexus-icon--lg {
+  --nexus-icon-size: 400px;
+  --nexus-icon-radius: 55px;
+  --nexus-bar-width: 54px;
+  --nexus-bar-height: 216px;
+  --nexus-bar-top: 92px;
+}
+.nexus-icon--lg .nexus-icon__left { left: 115px; }
+.nexus-icon--lg .nexus-icon__right { right: 115px; }
+.nexus-icon--lg .nexus-icon__top {
+  left: 142px;
+  width: 192px;
+  height: 42px;
+  transform: rotate(33deg);
+}
+.nexus-icon--lg .nexus-icon__bottom {
+  left: 188px;
+  top: 192px;
+  width: 192px;
+  height: 42px;
+  transform: rotate(36deg);
+}
+.nexus-icon--lg .nexus-icon__glow {
+  bottom: 30px;
+  width: 170px;
+  height: 18px;
+  filter: blur(14px);
+}
+
+/* ═══════════════════════════════════════════════
+   Animações
+   ═══════════════════════════════════════════════ */
+
+/* Pulse Glow */
+@keyframes nexus-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 40px var(--nexus-purple),
+      inset 0 0 80px rgba(255, 255, 255, 0.02);
+  }
+  50% {
+    box-shadow:
+      0 0 60px var(--nexus-purple),
+      0 0 80px var(--nexus-glow-blue),
+      inset 0 0 80px rgba(255, 255, 255, 0.04);
+  }
+}
+
+.nexus-icon--animated {
+  animation: nexus-pulse 3s ease-in-out infinite;
+}
+
+/* Float / Levitação */
+@keyframes nexus-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.nexus-icon--float {
+  animation: nexus-float 4s ease-in-out infinite;
+}
+
+/* Rotação suave */
+@keyframes nexus-spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.nexus-icon--spin {
+  animation: nexus-spin-slow 20s linear infinite;
+}
+
+/* ═══════════════════════════════════════════════
+   Responsividade
+   ═══════════════════════════════════════════════ */
+
+@media (max-width: 600px) {
+  .nexus-icon {
+    --nexus-icon-size: 200px;
+    --nexus-icon-radius: 28px;
+    --nexus-bar-width: 27px;
+    --nexus-bar-height: 108px;
+    --nexus-bar-top: 46px;
+  }
+  .nexus-icon .nexus-icon__left { left: 58px; }
+  .nexus-icon .nexus-icon__right { right: 58px; }
+  .nexus-icon .nexus-icon__top {
+    left: 71px;
+    width: 96px;
+    height: 22px;
+    transform: rotate(33deg);
+  }
+  .nexus-icon .nexus-icon__bottom {
+    left: 94px;
+    top: 96px;
+    width: 96px;
+    height: 22px;
+    transform: rotate(36deg);
+  }
+  .nexus-icon .nexus-icon__glow {
+    bottom: 16px;
+    width: 85px;
+    height: 10px;
+    filter: blur(8px);
+  }
+}
+

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Button, Input } from '../components/ui'
 import { authAPI } from '../api/endpoints'
+import { CSSLogo } from '../components/CSSLogo'
 
 const LoginPage = () => {
   const navigate = useNavigate()
@@ -53,6 +54,9 @@ const LoginPage = () => {
       >
         {/* Logo */}
         <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <CSSLogo size="lg" animated={true} />
+          </div>
           <motion.h1
             className="text-5xl font-bold gradient-text mb-2"
             animate={{ scale: [1, 1.05, 1] }}
