@@ -28,7 +28,7 @@ class _VideoPlayerScreenPremiumState extends State<VideoPlayerScreenPremium> {
   bool _isPlaying = false;
   bool _isFullscreen = false;
   double _currentPosition = 0;
-  double _totalDuration = 100;
+final double _totalDuration = 100;
   double _volume = 1.0;
   int _playbackSpeed = 100; // 100 = 1.0x
   String _selectedQuality = '1080p';
@@ -148,13 +148,12 @@ class _VideoPlayerScreenPremiumState extends State<VideoPlayerScreenPremium> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+return PopScope(
+      canPop: !_isFullscreen,
+      onPopInvokedWithResult: (didPop, _) async {
         if (_isFullscreen) {
           setState(() => _isFullscreen = false);
-          return false;
         }
-        return true;
       },
       child: Scaffold(
         backgroundColor: Colors.black,
@@ -168,7 +167,7 @@ class _VideoPlayerScreenPremiumState extends State<VideoPlayerScreenPremium> {
                   width: double.infinity,
                   height: 300,
                   color: AppColors.cardBackground,
-                  child: Center(
+                  child: const Center(
                     child: Icon(
                       Icons.play_arrow,
                       size: 80,
@@ -191,7 +190,7 @@ class _VideoPlayerScreenPremiumState extends State<VideoPlayerScreenPremium> {
                   });
                 },
                 child: Container(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                 ),
               ),
 
@@ -208,7 +207,7 @@ class _VideoPlayerScreenPremiumState extends State<VideoPlayerScreenPremium> {
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        Colors.black.withOpacity(0.9),
+                        Colors.black.withValues(alpha: 0.9),
                       ],
                     ),
                   ),
@@ -369,7 +368,7 @@ class _VideoPlayerScreenPremiumState extends State<VideoPlayerScreenPremium> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withOpacity(0.9),
+                        Colors.black.withValues(alpha: 0.9),
                         Colors.transparent,
                       ],
                     ),

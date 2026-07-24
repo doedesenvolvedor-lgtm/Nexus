@@ -55,11 +55,11 @@ backend:
       - /var/log/nexus:/var/log/nexus
       - ./storage:/app/storage
 
-  worker:
-    build:
+    worker:
+      build:
       context: ./backend
     command: python -m workers.queue_worker
-    restart: always
+     restart: always
     depends_on:
       postgres:
         condition: service_healthy

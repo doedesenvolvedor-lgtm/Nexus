@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
 
 import '../utils/constants.dart';
@@ -75,7 +73,7 @@ class AuthService {
     } on DioException catch (e) {
       final error = ErrorHandler.handleError(e);
       return AuthResponse(success: false, message: error.userMessage);
-    } catch (e) {
+    } catch (_) {
       return const AuthResponse(
         success: false,
         message: 'Nao foi possivel conectar ao servidor.',
@@ -108,7 +106,7 @@ class AuthService {
     } on DioException catch (e) {
       final error = ErrorHandler.handleError(e);
       return AuthResponse(success: false, message: error.userMessage);
-    } catch (e) {
+    } catch (_) {
       return const AuthResponse(
         success: false,
         message: 'Nao foi possivel conectar ao servidor.',
@@ -133,10 +131,9 @@ class AuthService {
       }
 
       return const TokenRefreshResponse(success: false);
-    } on DioException catch (e) {
-      final error = ErrorHandler.handleError(e);
-      return TokenRefreshResponse(success: false);
-    } catch (e) {
+    } on DioException catch (_) {
+      return const TokenRefreshResponse(success: false);
+    } catch (_) {
       return const TokenRefreshResponse(success: false);
     }
   }
@@ -149,7 +146,7 @@ class AuthService {
             ? Options(headers: {'Authorization': 'Bearer $token'})
             : null,
       );
-    } catch (e) {
+    } catch (_) {
       // Falha silenciosa no logout
     }
     return const AuthResponse(success: true, message: 'Sessao encerrada.');

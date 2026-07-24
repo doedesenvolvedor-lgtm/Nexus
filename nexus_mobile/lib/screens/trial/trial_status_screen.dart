@@ -118,7 +118,7 @@ class _TrialStatusScreenState extends State<TrialStatusScreen> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.purple.withOpacity(0.5),
+                            color: Colors.purple.withValues(alpha: 0.5),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -156,7 +156,7 @@ class _TrialStatusScreenState extends State<TrialStatusScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white10,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -172,9 +172,9 @@ class _TrialStatusScreenState extends State<TrialStatusScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.1),
+                        color: Colors.amber.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
                       ),
                       child: Column(
                         children: [
@@ -349,11 +349,11 @@ class _PlanCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           border: Border.all(
-            color: isPopular ? Colors.purple : Colors.white.withOpacity(0.2),
+            color: isPopular ? Colors.purple : Colors.white.withValues(alpha: 0.2),
             width: isPopular ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
-          color: isPopular ? Colors.purple.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+          color: isPopular ? Colors.purple.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,

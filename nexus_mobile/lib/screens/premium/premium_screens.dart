@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+;import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/colors.dart';
 import '../../widgets/custom_widgets.dart';
@@ -7,7 +7,7 @@ import '../../widgets/custom_widgets.dart';
 
 /// Tela de Assinaturas (Planos)
 class SubscriptionsScreen extends StatefulWidget {
-  const SubscriptionsScreen({Key? key}) : super(key: key);
+  const SubscriptionsScreen({super.key});
 
   @override
   State<SubscriptionsScreen> createState() => _SubscriptionsScreenState();
@@ -143,7 +143,7 @@ class _SubscriptionCard extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: plan.isPopular
                 ? AppColors.primaryGradient
-                : LinearGradient(
+                : const LinearGradient(
                     colors: [
                       AppColors.cardBackground,
                       AppColors.cardBackgroundLight,
@@ -153,7 +153,7 @@ class _SubscriptionCard extends StatelessWidget {
             boxShadow: plan.isPopular
                 ? [
                     BoxShadow(
-                      color: AppColors.primaryPurple.withOpacity(0.3),
+                      color: AppColors.primaryPurple.withValues(alpha: 0.3),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -298,7 +298,7 @@ class _SubscriptionCard extends StatelessWidget {
 
 /// Tela Trial Expirado
 class TrialExpiredScreen extends StatelessWidget {
-  const TrialExpiredScreen({Key? key}) : super(key: key);
+  const TrialExpiredScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -317,7 +317,7 @@ class TrialExpiredScreen extends StatelessWidget {
                 Container(
                   width: 100,
                   height: 100,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppColors.cardBackground,
                     shape: BoxShape.circle,
                   ),

@@ -26,7 +26,7 @@ class _LoginScreenPremiumState extends State<LoginScreenPremium>
   final authService = AuthService();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
-  bool _showPassword = false;
+final bool _showPassword = false;
 
   @override
   void initState() {
@@ -74,6 +74,7 @@ class _LoginScreenPremiumState extends State<LoginScreenPremium>
       if (!mounted) return;
 
       if (response.success && response.token != null) {
+        if (!mounted) return;
         final authProvider = context.read<AuthProvider>();
         await authProvider.login(
           emailController.text.trim(),
@@ -84,6 +85,7 @@ class _LoginScreenPremiumState extends State<LoginScreenPremium>
           Navigator.pushReplacementNamed(context, '/home');
         }
       } else {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(response.message),
@@ -92,6 +94,7 @@ class _LoginScreenPremiumState extends State<LoginScreenPremium>
         );
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro: $e')),
       );
@@ -336,7 +339,7 @@ class _LoginScreenPremiumState extends State<LoginScreenPremium>
         decoration: BoxDecoration(
           border: Border.all(color: AppColors.cardBackground, width: 1.5),
           borderRadius: BorderRadius.circular(12),
-          color: AppColors.cardBackground.withOpacity(0.3),
+          color: AppColors.cardBackground.withValues(alpha: 0.3),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -664,10 +667,10 @@ class _RegisterScreenPremiumState extends State<RegisterScreenPremium>
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.accentColor.withOpacity(0.1),
+                        color: AppColors.accentColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.accentColor.withOpacity(0.2),
+                          color: AppColors.accentColor.withValues(alpha: 0.2),
                         ),
                       ),
                       child: Row(
@@ -781,7 +784,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     child: Container(
                       width: 100,
                       height: 100,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: AppColors.primaryGradient,
                       ),

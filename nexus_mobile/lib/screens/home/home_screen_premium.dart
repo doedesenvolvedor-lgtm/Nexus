@@ -119,7 +119,7 @@ class _HomeScreenPremiumState extends State<HomeScreenPremium>
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppColors.background.withOpacity(0.5),
+                      AppColors.background.withValues(alpha: 0.5),
                       AppColors.background,
                     ],
                   ),
@@ -257,7 +257,7 @@ class _HomeScreenPremiumState extends State<HomeScreenPremium>
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primaryPurple.withOpacity(0.3),
+                  color: AppColors.primaryPurple.withValues(alpha: 0.3),
                   blurRadius: 20,
                   spreadRadius: 5,
                 ),
@@ -286,7 +286,7 @@ class _HomeScreenPremiumState extends State<HomeScreenPremium>
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
                 colors: [
-                  Colors.black.withOpacity(0.8),
+                  Colors.black.withValues(alpha: 0.8),
                   Colors.transparent,
                 ],
               ),
@@ -339,7 +339,7 @@ class _HomeScreenPremiumState extends State<HomeScreenPremium>
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Row(
@@ -442,7 +442,7 @@ class _HomeScreenPremiumState extends State<HomeScreenPremium>
                             child: Container(
                               height: 3,
                               decoration: BoxDecoration(
-                                color: AppColors.primaryPurple.withOpacity(0.8),
+                                color: AppColors.primaryPurple.withValues(alpha: 0.8),
                               ),
                               child: FractionallySizedBox(
                                 widthFactor: item.progress!,
@@ -511,8 +511,8 @@ class _HomeScreenPremiumState extends State<HomeScreenPremium>
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.primaryPurple.withOpacity(0.3),
-                    AppColors.primaryBlue.withOpacity(0.3),
+                    AppColors.primaryPurple.withValues(alpha: 0.3),
+                    AppColors.primaryBlue.withValues(alpha: 0.3),
                   ],
                 ),
                 border: Border.all(

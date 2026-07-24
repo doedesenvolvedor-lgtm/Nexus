@@ -3,7 +3,7 @@ FROM cirrusci/flutter:latest
 WORKDIR /app
 
 # Copiar projeto
-COPY nexus_mobile . /app/
+COPY nexus_mobile /app/
 
 # Aceitar licenças do Android
 RUN yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
@@ -11,8 +11,8 @@ RUN yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 # Instalar dependências
 RUN flutter pub get
 
-# Gerar APK
-RUN flutter build apk --release
+# Gerar APK e AAB
+RUN flutter build apk --release && flutter build appbundle --release
 
 # Output
-CMD ["sh", "-c", "cp build/app/outputs/flutter-apk/app-release.apk /output/app-release.apk && echo 'APK gerado com sucesso!'"]
+CMD ["sh", "-c", "cp build/app/outputs/flutter-apk/app-release.apk /output/app-release.apk && cp build/app/outputs/bundle/release/app-release.aab /output/app-release.aab && echo 'APK e AAB gerados com sucesso!'"]

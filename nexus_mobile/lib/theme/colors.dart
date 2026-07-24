@@ -37,16 +37,16 @@ class AppColors {
     colors: [accentPurple, primaryBlue],
   );
   
-  // Opacity variants
+  // Opacity variants - using withValues() (non-deprecated)
   static Color textPrimaryWithOpacity(double opacity) =>
-      textPrimary.withOpacity(opacity);
+      textPrimary.withValues(alpha: opacity);
   
   static Color textSecondaryWithOpacity(double opacity) =>
-      textSecondary.withOpacity(opacity);
+      textSecondary.withValues(alpha: opacity);
   
   static Color primaryPurpleWithOpacity(double opacity) =>
-      primaryPurple.withOpacity(opacity);
+      primaryPurple.withValues(alpha: opacity);
   
   static Color primaryBlueWithOpacity(double opacity) =>
-      primaryBlue.withOpacity(opacity);
+      primaryBlue.withValues(alpha: opacity);
 }

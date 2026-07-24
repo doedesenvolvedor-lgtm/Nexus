@@ -16,7 +16,7 @@ class PrimaryButton extends StatelessWidget {
   final double height;
 
   const PrimaryButton({
-    Key? key,
+    super.key,
     required this.label,
     required this.onPressed,
     this.isLoading = false,
@@ -24,7 +24,7 @@ class PrimaryButton extends StatelessWidget {
     this.icon,
     this.width,
     this.height = 56,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -37,15 +37,15 @@ class PrimaryButton extends StatelessWidget {
               ? AppColors.primaryGradient
               : LinearGradient(
                   colors: [
-                    AppColors.textTertiary.withOpacity(0.5),
-                    AppColors.textTertiary.withOpacity(0.3),
+                    AppColors.textTertiary.withValues(alpha: 0.5),
+                    AppColors.textTertiary.withValues(alpha: 0.3),
                   ],
                 ),
           borderRadius: BorderRadius.circular(12),
           boxShadow: isEnabled
               ? [
                   BoxShadow(
-                    color: AppColors.primaryPurple.withOpacity(0.4),
+                    color: AppColors.primaryPurple.withValues(alpha: 0.4),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -58,7 +58,7 @@ class PrimaryButton extends StatelessWidget {
             backgroundColor: Colors.transparent,
             elevation: 0,
             padding: EdgeInsets.zero,
-            disabledForegroundColor: AppColors.textTertiary.withOpacity(0.5),
+            disabledForegroundColor: AppColors.textTertiary.withValues(alpha: 0.5),
           ),
           child: isLoading
               ? const SizedBox(
@@ -102,13 +102,13 @@ class SecondaryButton extends StatelessWidget {
   final double height;
 
   const SecondaryButton({
-    Key? key,
+    super.key,
     required this.label,
     required this.onPressed,
     this.icon,
     this.width,
     this.height = 56,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -158,7 +158,7 @@ class MediaCard extends StatelessWidget {
   final double height;
 
   const MediaCard({
-    Key? key,
+    super.key,
     required this.imageUrl,
     required this.title,
     this.subtitle,
@@ -167,7 +167,7 @@ class MediaCard extends StatelessWidget {
     this.isLoading = false,
     this.width = 150,
     this.height = 225,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -183,7 +183,7 @@ class MediaCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -220,7 +220,7 @@ class MediaCard extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
+                        color: Colors.black.withValues(alpha: 0.7),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(
@@ -297,7 +297,7 @@ class CustomTextField extends StatefulWidget {
   final int maxLines;
 
   const CustomTextField({
-    Key? key,
+    super.key,
     required this.label,
     this.hint,
     this.prefixIcon,
@@ -308,7 +308,7 @@ class CustomTextField extends StatefulWidget {
     this.onChanged,
     this.minLines = 1,
     this.maxLines = 1,
-  }) : super(key: key);
+  });
 
   @override
   State<CustomTextField> createState() => _CustomTextFieldState();
@@ -366,11 +366,11 @@ class SkeletonLoader extends StatelessWidget {
   final BorderRadius? borderRadius;
 
   const SkeletonLoader({
-    Key? key,
+    super.key,
     required this.width,
     required this.height,
     this.borderRadius,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -396,11 +396,11 @@ class ShimmerEffect extends StatefulWidget {
   final BorderRadius? borderRadius;
 
   const ShimmerEffect({
-    Key? key,
+    super.key,
     required this.width,
     required this.height,
     this.borderRadius,
-  }) : super(key: key);
+  });
 
   @override
   State<ShimmerEffect> createState() => _ShimmerEffectState();
@@ -439,7 +439,7 @@ class _ShimmerEffectState extends State<ShimmerEffect>
             gradient: LinearGradient(
               begin: Alignment(-1.0 + _controller.value * 2.0, -1.0),
               end: Alignment(1.0 + _controller.value * 2.0, 1.0),
-              colors: [
+              colors: const [
                 AppColors.cardBackground,
                 AppColors.cardBackgroundLight,
                 AppColors.cardBackground,
@@ -461,10 +461,10 @@ class PremiumBadge extends StatelessWidget {
   final bool isBig;
 
   const PremiumBadge({
-    Key? key,
+    super.key,
     required this.text,
     this.isBig = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -495,11 +495,11 @@ class CategoryTag extends StatelessWidget {
   final VoidCallback onTap;
 
   const CategoryTag({
-    Key? key,
+    super.key,
     required this.label,
     required this.isSelected,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

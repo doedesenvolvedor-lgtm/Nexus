@@ -1,4 +1,4 @@
-import 'dart:io';
+
 
 // API URL configuravel via variavel de ambiente ou fallback
 const String _defaultApiUrl = 'http://10.0.2.2:8000';

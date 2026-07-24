@@ -11,13 +11,13 @@ class NexustwosBrandLogo extends StatelessWidget {
   final String? semanticLabel;
 
   const NexustwosBrandLogo({
-    Key? key,
+    super.key,
     this.size = 100,
     this.useSvg = true,
     this.padding,
     this.onTap,
     this.semanticLabel,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -58,9 +58,9 @@ class NexustwosBrandLogoSmall extends StatelessWidget {
   final VoidCallback? onTap;
 
   const NexustwosBrandLogoSmall({
-    Key? key,
+    super.key,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -75,9 +75,9 @@ class NexustwosBrandLogoMedium extends StatelessWidget {
   final VoidCallback? onTap;
 
   const NexustwosBrandLogoMedium({
-    Key? key,
+    super.key,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -92,9 +92,9 @@ class NexustwosBrandLogoLarge extends StatelessWidget {
   final VoidCallback? onTap;
 
   const NexustwosBrandLogoLarge({
-    Key? key,
+    super.key,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

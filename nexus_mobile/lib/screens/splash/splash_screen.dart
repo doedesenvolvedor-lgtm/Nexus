@@ -100,7 +100,7 @@ class _SplashScreenState extends State<SplashScreen>
                             boxShadow: [
                               BoxShadow(
                                 color: AppColors.primaryPurple
-                                    .withOpacity(0.6 * _glowAnimation.value),
+                                    .withValues(alpha: 0.6 * _glowAnimation.value),
                                 blurRadius: 60 * _glowAnimation.value,
                                 spreadRadius: 10 * _glowAnimation.value,
                               ),
@@ -172,7 +172,7 @@ class _SplashScreenState extends State<SplashScreen>
               ),
               child: Column(
                 children: [
-                  SizedBox(
+                  const SizedBox(
                     width: 40,
                     height: 40,
                     child: CircularProgressIndicator(

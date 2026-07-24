@@ -219,7 +219,7 @@ class ApiCacheManager {
   
   /// Invalida cache de entidade específica
   static void invalidate(String entity) {
-    _cache.removeByPrefix('${cachePrefix}${entity}_');
+_cache.removeByPrefix('$cachePrefix${entity}_');
   }
   
   /// Get com cache e retry

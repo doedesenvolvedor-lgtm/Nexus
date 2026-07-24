@@ -23,7 +23,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   int savedPosition = 0;
   int lastSavedPosition = 0;
   bool _isLoading = true;
-  String? _profileId;
+  Media? _media;
 
   @override
   void initState() {
@@ -32,11 +32,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Future<void> _initialize() async {
-    final media = ModalRoute.of(context)!.settings.arguments as Media;
+    _media = ModalRoute.of(context)!.settings.arguments as Media;
+    final media = _media!;
     
-    // Obter profileId real do Provider
     final authProvider = context.read<AuthProvider>();
-    // Idealmente, usar ProfileProvider para pegar o profile ativo
     
     controller = VideoPlayerController.networkUrl(Uri.parse(media.video))
       ..initialize().then((_) async {
@@ -58,7 +57,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
       }
 
       final seconds = controller.value.position.inSeconds;
-      // Salvar apenas quando avançar mais de 30 segundos da última posição salva
       if ((seconds - lastSavedPosition).abs() >= 30 && seconds != lastSavedPosition) {
         lastSavedPosition = seconds;
         service.saveProgress(
@@ -72,17 +70,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   void dispose() {
-    // Salvar posição final ao sair
-    if (lastSavedPosition > 0) {
-      final media = ModalRoute.of(context)?.settings.arguments as Media?;
-      if (media != null) {
-        final authProvider = context.read<AuthProvider>();
-        service.saveProgress(
-          profileId: authProvider.email ?? 'demo-profile',
-          mediaId: media.id,
-          seconds: lastSavedPosition,
-        );
-      }
+    if (lastSavedPosition > 0 && _media != null) {
+      service.saveProgress(
+        profileId: 'demo-profile',
+        mediaId: _media!.id,
+        seconds: lastSavedPosition,
+      );
     }
     saveTimer?.cancel();
     controller.dispose();

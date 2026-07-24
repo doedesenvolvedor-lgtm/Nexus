@@ -15,7 +15,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentPage = 0;
 
   final List<OnboardingPage> pages = [
-    OnboardingPage(
+    const OnboardingPage(
       title: 'Filmes de Classe\nMundial',
       description:
           'Acesse uma coleção exclusiva de filmes de sucesso, desde clássicos atemporais até lançamentos do momento.',
@@ -24,7 +24,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         colors: [AppColors.primaryPurple, AppColors.primaryBlue],
       ),
     ),
-    OnboardingPage(
+    const OnboardingPage(
       title: 'Séries\nImperdíveis',
       description:
           'Binge-watch suas séries favoritas. Acompanhe episódios lançados, maratonas completas e muito mais.',
@@ -33,7 +33,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         colors: [AppColors.primaryBlue, AppColors.primaryGradientEnd],
       ),
     ),
-    OnboardingPage(
+    const OnboardingPage(
       title: 'Streaming em\nAlta Qualidade',
       description:
           'Aproveite o melhor da tecnologia com reprodução em 4K, sem anúncios e em qualquer dispositivo.',
@@ -152,7 +152,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           end: Alignment.bottomRight,
           colors: [
             AppColors.background,
-            AppColors.background.withOpacity(0.95),
+            AppColors.background.withValues(alpha: 0.95),
           ],
         ),
       ),
@@ -168,7 +168,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               gradient: page.gradient,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primaryPurple.withOpacity(0.4),
+                  color: AppColors.primaryPurple.withValues(alpha: 0.4),
                   blurRadius: 40,
                   spreadRadius: 10,
                 ),
@@ -228,7 +228,7 @@ class OnboardingPage {
   final IconData icon;
   final LinearGradient gradient;
 
-  OnboardingPage({
+  const OnboardingPage({
     required this.title,
     required this.description,
     required this.icon,
