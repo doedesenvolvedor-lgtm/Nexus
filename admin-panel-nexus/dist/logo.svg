@@ -1,0 +1,130 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="1024" height="1024">
+  <defs>
+    <!-- Gradiente roxo/magenta para lado esquerdo -->
+    <linearGradient id="gradientLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#A020F0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#D946EF;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Gradiente azul/ciano para lado direito -->
+    <linearGradient id="gradientRight" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563EB;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#38BDF8;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Gradiente diagonal central (cristal) -->
+    <linearGradient id="gradientCenter" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#A020F0;stop-opacity:0.6" />
+      <stop offset="50%" style="stop-color:#FFFFFF;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#38BDF8;stop-opacity:0.6" />
+    </linearGradient>
+    
+    <!-- Glow filter -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Bloom effect -->
+    <filter id="bloom">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Shadow filter -->
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="0" stdDeviation="12" flood-color="#A020F0" flood-opacity="0.4"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#2563EB" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Fundo preto profundo -->
+  <rect width="1024" height="1024" fill="#050505"/>
+  
+  <!-- Quadrado arredondado com brilho neon -->
+  <rect x="40" y="40" width="944" height="944" rx="140" ry="140" 
+        fill="none" stroke="url(#gradientRight)" stroke-width="3" opacity="0.4" filter="url(#glow)"/>
+  
+  <!-- Quadrado arredondado duplo glow -->
+  <rect x="45" y="45" width="934" height="934" rx="135" ry="135" 
+        fill="none" stroke="url(#gradientLeft)" stroke-width="2" opacity="0.2" filter="url(#glow)"/>
+  
+  <!-- Iluminação volumétrica de fundo -->
+  <ellipse cx="512" cy="512" rx="600" ry="400" fill="url(#gradientLeft)" opacity="0.05"/>
+  <ellipse cx="512" cy="512" rx="400" ry="600" fill="url(#gradientRight)" opacity="0.05"/>
+  
+  <!-- Letra N - Lado Esquerdo (Roxo/Magenta) -->
+  <g filter="url(#shadow)">
+    <!-- Barra vertical esquerda - parte frontal -->
+    <polygon points="280,250 340,250 520,650 520,720 460,720 280,320" 
+             fill="url(#gradientLeft)" opacity="0.95"/>
+    
+    <!-- Barra vertical esquerda - efeito de profundidade -->
+    <polygon points="275,245 335,245 340,250 280,250" 
+             fill="#D946EF" opacity="0.6"/>
+    <polygon points="520,715 520,650 525,655 525,720" 
+             fill="#A020F0" opacity="0.4"/>
+  </g>
+  
+  <!-- Letra N - Lado Direito (Azul/Ciano) -->
+  <g filter="url(#shadow)">
+    <!-- Barra vertical direita - parte frontal -->
+    <polygon points="504,250 564,250 744,720 684,720 504,320" 
+             fill="url(#gradientRight)" opacity="0.95"/>
+    
+    <!-- Barra vertical direita - efeito de profundidade -->
+    <polygon points="564,250 569,245 744,715 739,720" 
+             fill="#2563EB" opacity="0.4"/>
+  </g>
+  
+  <!-- Diagonal Central (Cristal translúcido) -->
+  <g filter="url(#bloom)">
+    <!-- Diagonal principal com gradiente -->
+    <polygon points="340,250 400,250 684,720 624,720" 
+             fill="url(#gradientCenter)" opacity="0.85"/>
+    
+    <!-- Reflexo superior na diagonal -->
+    <polygon points="345,255 380,255 420,310 390,305" 
+             fill="#FFFFFF" opacity="0.15"/>
+    
+    <!-- Reflexo inferior na diagonal -->
+    <polygon points="640,665 670,715 615,720 590,680" 
+             fill="#FFFFFF" opacity="0.12"/>
+  </g>
+  
+  <!-- Efeito glow adicional na diagonal -->
+  <polygon points="340,250 400,250 684,720 624,720" 
+           fill="none" stroke="url(#gradientCenter)" stroke-width="8" 
+           opacity="0.3" filter="url(#glow)"/>
+  
+  <!-- Iluminação ambiente - reflexo de vidro superior esquerdo -->
+  <ellipse cx="350" cy="320" rx="80" ry="60" fill="#FFFFFF" opacity="0.08"/>
+  
+  <!-- Iluminação ambiente - reflexo de vidro inferior direito -->
+  <ellipse cx="680" cy="680" rx="70" ry="50" fill="#FFFFFF" opacity="0.06"/>
+  
+  <!-- Glow aura roxo/azul ao redor da letra -->
+  <g opacity="0.15" filter="url(#glow)">
+    <polygon points="280,250 340,250 520,650 520,720 460,720 280,320" 
+             fill="none" stroke="url(#gradientLeft)" stroke-width="12"/>
+    <polygon points="504,250 564,250 744,720 684,720 504,320" 
+             fill="none" stroke="url(#gradientRight)" stroke-width="12"/>
+    <polygon points="340,250 400,250 684,720 624,720" 
+             fill="none" stroke="url(#gradientCenter)" stroke-width="12"/>
+  </g>
+  
+  <!-- Borde neon final - glow extremo -->
+  <rect x="40" y="40" width="944" height="944" rx="140" ry="140" 
+        fill="none" stroke="url(#gradientLeft)" stroke-width="8" 
+        opacity="0.15" filter="url(#glow)"/>
+  
+  <!-- Reflexo suave de vidro em toda a composição -->
+  <circle cx="512" cy="512" r="480" fill="url(#gradientRight)" opacity="0.02"/>
+</svg>

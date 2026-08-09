@@ -1,8 +1,10 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from app.models import User
+from app.security_admin import get_admin_user
 from app.services.queue_audit_service import create_queue_job, list_recent_jobs, mark_job_failed
 from app.services.queue_service import (
     IMPORT_QUEUE,
@@ -52,7 +54,10 @@ def _chunk(items: list, chunk_size: int) -> list[list]:
 
 
 @router.post("/import-media")
-def enqueue_import_media(data: BulkImportRequest):
+def enqueue_import_media(
+    data: BulkImportRequest,
+    _: User = Depends(get_admin_user),
+):
     if not data.items:
         raise HTTPException(status_code=400, detail="Envie ao menos 1 item para importacao.")
 
@@ -90,7 +95,10 @@ def enqueue_import_media(data: BulkImportRequest):
 
 
 @router.post("/push-notifications")
-def enqueue_push_notifications(data: BulkPushRequest):
+def enqueue_push_notifications(
+    data: BulkPushRequest,
+    _: User = Depends(get_admin_user),
+):
     if not data.notifications:
         raise HTTPException(status_code=400, detail="Envie ao menos 1 notificacao.")
 
@@ -128,7 +136,7 @@ def enqueue_push_notifications(data: BulkPushRequest):
 
 
 @router.get("/stats")
-def queue_stats():
+def queue_stats(_: User = Depends(get_admin_user)):
     return {
         "import_queue_length": get_queue_length(IMPORT_QUEUE),
         "push_queue_length": get_queue_length(PUSH_QUEUE),
@@ -139,7 +147,7 @@ def queue_stats():
 
 
 @router.get("/jobs")
-def queue_jobs(limit: int = 50):
+def queue_jobs(limit: int = 50, _: User = Depends(get_admin_user)):
     return {
         "jobs": list_recent_jobs(limit=min(max(limit, 1), 200)),
     }

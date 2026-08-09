@@ -117,18 +117,13 @@ const LoginPage = () => {
             </Button>
           </form>
 
-          {/* Demo Credentials */}
+          {/* Security Note */}
           <div className="mt-6 p-4 bg-nexus-bg rounded-lg border border-nexus-border/50">
-            <p className="text-xs text-nexus-text-secondary mb-2">
-              📝 Credenciais de Demo:
-            </p>
-            <p className="text-xs text-nexus-text font-mono mb-1">
-              Email: admin@nexus.com
-            </p>
-            <p className="text-xs text-nexus-text font-mono">
-              Senha: admin123456
+            <p className="text-xs text-nexus-text-secondary">
+              🔒 Acesso restrito. Somente administradores autorizados.
             </p>
           </div>
+
         </motion.div>
 
         {/* Footer */}

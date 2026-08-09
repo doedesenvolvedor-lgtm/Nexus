@@ -3,8 +3,11 @@ import 'package:provider/provider.dart';
 
 import '../../models/media.dart';
 import '../../providers/favorites_provider.dart';
+import '../../providers/parental_control_provider.dart';
+import '../../providers/profile_provider.dart';
 import '../../services/media_service.dart';
 import '../../widgets/action_buttons.dart';
+import '../../widgets/parental_lock_dialog.dart';
 
 class MovieDetailsScreen extends StatefulWidget {
   const MovieDetailsScreen({super.key});
@@ -27,7 +30,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
     }
   }
 
-  Future<void> _loadDetails() async {
+Future<void> _loadDetails() async {
     final routeMedia = ModalRoute.of(context)?.settings.arguments as Media?;
     if (routeMedia == null) {
       setState(() {
@@ -47,6 +50,45 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
       _loading = false;
       _notFound = false;
     });
+  }
+
+  /// Verifica o acesso pelo Controle Parental antes de iniciar a reprodução.
+  Future<void> _onPlay(Media movie) async {
+    final profileProvider = context.read<ProfileProvider>();
+    final profile = profileProvider.selectedProfile;
+    if (profile == null) {
+      Navigator.pushNamed(context, '/player', arguments: movie);
+      return;
+    }
+
+    final parental = context.read<ParentalControlProvider>();
+    final decision = await parental.checkAccess(
+      profileId: profile.id,
+      contentType: movie.type == 'series' ? 'series' : 'movie',
+      targetId: movie.id,
+      rating: movie.rating,
+      title: movie.title,
+    );
+
+    if (!mounted) return;
+
+    if (decision.allowed) {
+      Navigator.pushNamed(context, '/player', arguments: movie);
+      return;
+    }
+
+    // Conteúdo bloqueado: mostra diálogo amigável + PIN para desbloquear.
+    final unlocked = await ParentalLockDialog.show(
+      context,
+      profileId: profile.id,
+      title: 'Conteúdo restrito',
+      message: decision.message ??
+          'Conteúdo protegido pelo Controle Parental.\nInforme o PIN para continuar.',
+    );
+
+    if (unlocked && mounted) {
+      Navigator.pushNamed(context, '/player', arguments: movie);
+    }
   }
 
   @override
@@ -90,10 +132,8 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                       style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 20),
-                    ActionButtons(
-                      play: () {
-                        Navigator.pushNamed(context, '/player', arguments: movie);
-                      },
+ActionButtons(
+                      play: () => _onPlay(movie),
                       favorite: () {
                         favoritesProvider.toggle(movie);
                       },

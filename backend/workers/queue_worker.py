@@ -9,6 +9,7 @@ from app.database import SessionLocal
 from app.models import DeviceToken, MediaContent
 from app.services.firebase_service import FirebaseService
 from app.services.queue_audit_service import mark_job_completed, mark_job_failed, mark_job_processing
+from app.services.content_maintenance_service import ContentMaintenanceService
 
 logging.basicConfig(
     level=logging.INFO,
@@ -18,6 +19,7 @@ logger = logging.getLogger("queue-worker")
 
 IMPORT_QUEUE = "jobs:import_media"
 PUSH_QUEUE = "jobs:push_notifications"
+MAINTENANCE_QUEUE = "jobs:content_maintenance"
 
 
 def redis_client() -> redis.Redis:
@@ -45,6 +47,46 @@ def process_import_batch(payload: dict) -> int:
         raise
     finally:
         db.close()
+
+
+def process_content_maintenance(payload: dict) -> dict:
+    """Processa um job de manutenção de conteúdo."""
+    maintenance_type = payload.get("maintenance_type", "full")
+    service = ContentMaintenanceService()
+
+    if maintenance_type == "streams":
+        db = SessionLocal()
+        try:
+            return service.update_streaming_links(db)
+        finally:
+            db.close()
+
+    if maintenance_type == "channels":
+        db = SessionLocal()
+        try:
+            return service.check_channel_availability(db)
+        finally:
+            db.close()
+
+    if maintenance_type == "playlists":
+        db = SessionLocal()
+        try:
+            return service.auto_update_playlists(db)
+        finally:
+            db.close()
+
+    if maintenance_type == "tmdb":
+        import asyncio
+        db = SessionLocal()
+        try:
+            results = asyncio.run(service.auto_update_from_tmdb(db))
+            return {"updated": results}
+        finally:
+            db.close()
+
+    # Full cycle (padrão)
+    import asyncio
+    return asyncio.run(service.run_maintenance_cycle())
 
 
 def process_push_batch(payload: dict) -> int:
@@ -138,6 +180,14 @@ def handle_job(client: redis.Redis, queue_name: str, raw_payload: str) -> None:
             logger.info("Push batch processado com %s notificacoes", processed)
             return
 
+        if queue_name == MAINTENANCE_QUEUE and job_type == "content_maintenance":
+            results = process_content_maintenance(payload)
+            incr(client, "jobs:processed:content_maintenance", 1)
+            if job_id:
+                mark_job_completed(job_id, 1)
+            logger.info("Content maintenance concluído: %s", results)
+            return
+
         incr(client, "jobs:processed:failed", 1)
         if job_id:
             mark_job_failed(job_id, "Tipo/fila de job desconhecido")
@@ -155,7 +205,7 @@ def run() -> None:
 
     while True:
         try:
-            response = client.blpop([IMPORT_QUEUE, PUSH_QUEUE], timeout=5)
+            response = client.blpop([IMPORT_QUEUE, PUSH_QUEUE, MAINTENANCE_QUEUE], timeout=5)
             if not response:
                 continue
 

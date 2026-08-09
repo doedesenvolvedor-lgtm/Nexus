@@ -8,7 +8,9 @@ from datetime import datetime, timezone
 import uuid
 
 import pytest
+from fastapi import HTTPException
 from jose import JWTError
+from unittest.mock import MagicMock, patch
 
 # Configurar variáveis de ambiente para teste
 os.environ["SECRET_KEY"] = "test-secret-key-for-unit-tests-nexus"
@@ -16,6 +18,10 @@ os.environ["ALGORITHM"] = "HS256"
 os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "30"
 os.environ["REFRESH_TOKEN_EXPIRE_DAYS"] = "7"
 
+from app.dependencies import get_current_user
+from app.models import User
+from app.routers.auth import refresh_token
+from app.schemas import RefreshTokenRequest
 from app.security import (
     hash_password,
     verify_password,
@@ -24,6 +30,11 @@ from app.security import (
     decode_token,
     _ensure_security_config,
 )
+
+
+class DummyUser:
+    def __init__(self, user_id):
+        self.id = user_id
 
 
 class TestPasswordHashing:
@@ -187,3 +198,61 @@ class TestJWTClaims:
         assert payload["email"] == "user@test.com"
         assert payload["role"] == "admin"
         assert payload["custom_key"] == "custom_value"
+
+    def test_get_current_user_rejects_refresh_token(self):
+        """Testa que refresh tokens nao validam endpoints protegidos."""
+        user_id = str(uuid.uuid4())
+        access_token = create_access_token({"sub": user_id, "email": "test@example.com"})
+        refresh_token = create_refresh_token({"sub": user_id, "email": "test@example.com"})
+
+        mock_db = MagicMock()
+        mock_db.query.return_value.filter.return_value.first.return_value = DummyUser(user_id)
+
+        # Access token deve funcionar
+        user = get_current_user(token=access_token, db=mock_db)
+        assert user.id == user_id
+
+        # Refresh token nao deve ser aceito para endpoints protegidos
+        with pytest.raises(Exception):
+            get_current_user(token=refresh_token, db=mock_db)
+
+
+class TestSessionValidation:
+    def test_get_current_user_rejects_inactive_session(self):
+        """Testa que um access token com sessao revogada e rejeitado."""
+        user_id = str(uuid.uuid4())
+        token = create_access_token({"sub": user_id, "email": "test@example.com"})
+
+        mock_db = MagicMock()
+        mock_db.query.return_value.filter.return_value.first.return_value = DummyUser(user_id)
+
+        with patch("app.services.auth_session_service.is_session_active", return_value=False):
+            with pytest.raises(HTTPException) as exc_info:
+                get_current_user(token=token, db=mock_db)
+
+        assert exc_info.value.status_code == 401
+        assert "Sessao expirada ou revogada" in str(exc_info.value.detail)
+
+    def test_refresh_token_rotates_jti_and_registers_new_session(self):
+        """Testa que refresh token valida sessao e cria nova sessao com JTI trocado."""
+        user_id = str(uuid.uuid4())
+        old_jti = str(uuid.uuid4())
+        refresh_token_value = create_refresh_token({"sub": user_id, "email": "test@example.com"}, jti=old_jti)
+
+        mock_db = MagicMock()
+        mock_db.query.return_value.filter.return_value.first.return_value = DummyUser(user_id)
+
+        with patch("app.services.auth_session_service.is_session_active", return_value=True) as mock_active, \
+             patch("app.services.auth_session_service.revoke_session") as mock_revoke, \
+             patch("app.services.auth_session_service.register_session") as mock_register:
+            response = refresh_token(
+                request=RefreshTokenRequest(refresh_token=refresh_token_value),
+                db=mock_db,
+            )
+
+        assert response["token_type"] == "bearer"
+        assert response["access_token"] != refresh_token_value
+        assert response["refresh_token"] != refresh_token_value
+        assert mock_revoke.called
+        assert mock_register.called
+        mock_active.assert_called_once_with(user_id, old_jti)

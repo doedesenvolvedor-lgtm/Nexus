@@ -5,7 +5,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.config import ACCESS_TOKEN_EXPIRE_MINUTES
+from app.config import ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
 from app.database import get_db
 from app.dependencies import get_current_token_payload, get_current_user
 from app.models import User, Subscription
@@ -102,12 +102,12 @@ def login(credentials: Login, db: Session = Depends(get_db)):
 
     clear_login_failures(credentials.email)
     jti = str(uuid4())
-    token = create_access_token({"sub": str(user.id), "email": user.email})
-    refresh_token = create_refresh_token({"sub": str(user.id), "email": user.email})
+    token = create_access_token({"sub": str(user.id), "email": user.email}, jti=jti)
+    refresh_token = create_refresh_token({"sub": str(user.id), "email": user.email}, jti=jti)
     register_session(
         user_id=str(user.id),
         jti=jti,
-        ttl_seconds=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        ttl_seconds=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
     )
 
     return {
@@ -136,19 +136,24 @@ def refresh_token(request: RefreshTokenRequest, db: Session = Depends(get_db)):
                 detail="Usuário não encontrado.",
             )
 
-        # Revogar sessão antiga
         old_jti = payload.get("jti")
-        if old_jti:
-            revoke_session(str(user.id), str(old_jti))
+        if not old_jti or not is_session_active(str(user.id), str(old_jti)):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Sessão inválida ou expirada.",
+            )
 
-        # Criar novos tokens
+        # Revogar sessão antiga
+        revoke_session(str(user.id), str(old_jti))
+
+        # Criar novos tokens com o mesmo JTI de sessão
         jti = str(uuid4())
-        new_access_token = create_access_token({"sub": str(user.id), "email": user.email})
-        new_refresh_token = create_refresh_token({"sub": str(user.id), "email": user.email})
+        new_access_token = create_access_token({"sub": str(user.id), "email": user.email}, jti=jti)
+        new_refresh_token = create_refresh_token({"sub": str(user.id), "email": user.email}, jti=jti)
         register_session(
             user_id=str(user.id),
             jti=jti,
-            ttl_seconds=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            ttl_seconds=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
         )
 
         return {

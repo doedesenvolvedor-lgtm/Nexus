@@ -20,7 +20,14 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 def get_current_token_payload(token: str = Depends(oauth2_scheme)):
     try:
-        return decode_token(token)
+        payload = decode_token(token)
+        token_type = payload.get("type")
+        if token_type not in ("access", "refresh"):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token invalido.",
+            )
+        return payload
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -36,6 +43,12 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         )
     try:
         payload = decode_token(token)
+        if payload.get("type") != "access":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token invalido.",
+            )
+
         user_id = payload.get("sub")
         if not user_id:
             raise HTTPException(
@@ -44,7 +57,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             )
 
         jti = payload.get("jti")
-        if jti and not is_session_active(str(user_id), str(jti)):
+        if not jti or not is_session_active(str(user_id), str(jti)):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Sessao expirada ou revogada.",
@@ -77,12 +90,15 @@ def get_optional_user(
         return None
     try:
         payload = decode_token(token)
+        if payload.get("type") != "access":
+            return None
+
         user_id = payload.get("sub")
         if not user_id:
             return None
 
         jti = payload.get("jti")
-        if jti and not is_session_active(str(user_id), str(jti)):
+        if not jti or not is_session_active(str(user_id), str(jti)):
             return None
 
         user = db.query(User).filter(User.id == user_id).first()

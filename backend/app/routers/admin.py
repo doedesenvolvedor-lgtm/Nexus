@@ -1,16 +1,23 @@
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from uuid import uuid4
+import shutil
 
 import magic
-from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, Request, UploadFile
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
 
 from app.database import get_db
 from app.models import MediaContent, Payment, PlaybackHistory, Profile, User, Subscription
-from app.schemas import AdminEmailAnnouncementRequest, AdminUserResponse, PaginatedAdminUsersResponse
+from app.schemas import (
+    AdminEmailAnnouncementRequest,
+    AdminUserResponse,
+    MediaResponse,
+    PaginatedAdminUsersResponse,
+)
 from app.security_admin import get_admin_user
+from app.services.audit_service import log_admin_action
 from app.services.email_service import get_email_service
 from workers.transcoder import process_video
 
@@ -65,12 +72,17 @@ def analytics(db: Session = Depends(get_db)):
 
 @router.get("/revenue")
 def revenue(db: Session = Depends(get_db)):
-    approved_payments = db.query(Payment).filter(Payment.status == "approved").all()
-    total = sum(payment.amount for payment in approved_payments)
+    result = (
+        db.query(func.coalesce(func.sum(Payment.amount), 0.0), func.count(Payment.id))
+        .filter(Payment.status == "approved")
+        .first()
+    )
+    total = float(result[0]) if result else 0.0
+    payments = int(result[1]) if result else 0
 
     return {
         "total_revenue": total,
-        "payments": len(approved_payments),
+        "payments": payments,
     }
 
 
@@ -88,11 +100,29 @@ def users(
     status: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ):
-    from sqlalchemy.orm import joinedload
-    
-    query = db.query(User).options(
-        joinedload(User.subscriptions)
-    ).order_by(User.created_at.desc())
+    latest_subquery = (
+        db.query(
+            Subscription.user_id.label("user_id"),
+            Subscription.plan.label("plan"),
+            Subscription.status.label("status"),
+            func.row_number()
+            .over(partition_by=Subscription.user_id, order_by=Subscription.created_at.desc())
+            .label("row_number"),
+        )
+        .subquery()
+    )
+
+    query = (
+        db.query(User, latest_subquery.c.plan, latest_subquery.c.status)
+        .outerjoin(
+            latest_subquery,
+            and_(
+                User.id == latest_subquery.c.user_id,
+                latest_subquery.c.row_number == 1,
+            ),
+        )
+        .order_by(User.created_at.desc())
+    )
 
     if search:
         normalized_search = f"%{search.strip().lower()}%"
@@ -101,28 +131,20 @@ def users(
             | func.lower(func.coalesce(User.username, "")).ilike(normalized_search)
         )
 
-    user_rows = query.all()
+    if plan:
+        query = query.filter(func.lower(func.coalesce(latest_subquery.c.plan, "free")) == plan.lower())
+    if status:
+        query = query.filter(func.lower(func.coalesce(latest_subquery.c.status, "inactive")) == status.lower())
+
+    total = query.count()
+    rows = query.offset((page - 1) * limit).limit(limit).all()
+
     data: list[AdminUserResponse] = []
-
-    for user in user_rows:
-        # Subscription já carregada via joinedload
-        latest_subscription = None
-        if user.subscriptions:
-            # subscriptions já ordenado, pegar o mais recente
-            sorted_subs = sorted(user.subscriptions, key=lambda s: s.created_at, reverse=True)
-            latest_subscription = sorted_subs[0] if sorted_subs else None
-
-        plan_value = (latest_subscription.plan or "free") if latest_subscription else "free"
+    for user, plan_value, status_value in rows:
+        plan_value = (plan_value or "free").lower()
         status_value = (
-            latest_subscription.status
-            if latest_subscription and latest_subscription.status
-            else ("active" if user.is_premium else "inactive")
+            (status_value or ("active" if user.is_premium else "inactive")).lower()
         )
-
-        if plan and plan_value.lower() != plan.lower():
-            continue
-        if status and status_value.lower() != status.lower():
-            continue
 
         data.append(
             AdminUserResponse(
@@ -132,16 +154,14 @@ def users(
                 is_premium=user.is_premium,
                 role=user.role,
                 created_at=user.created_at,
-                plan=plan_value.lower(),
-                status=status_value.lower(),
+                plan=plan_value,
+                status=status_value,
             )
         )
 
-    start = (page - 1) * limit
-    end = start + limit
     return {
-        "data": data[start:end],
-        "total": len(data),
+        "data": data,
+        "total": total,
         "page": page,
         "limit": limit,
     }
@@ -162,10 +182,8 @@ def list_payments(
     if method:
         query = query.filter(Payment.provider == method)
 
-    rows = query.all()
-    start = (page - 1) * limit
-    end = start + limit
-    paginated_rows = rows[start:end]
+    total = query.count()
+    rows = query.offset((page - 1) * limit).limit(limit).all()
 
     return {
         "data": [
@@ -177,9 +195,9 @@ def list_payments(
                 "status": payment.status,
                 "created_at": payment.created_at,
             }
-            for payment, user in paginated_rows
+            for payment, user in rows
         ],
-        "total": len(rows),
+        "total": total,
         "page": page,
         "limit": limit,
     }
@@ -187,25 +205,28 @@ def list_payments(
 
 @router.get("/payments/stats")
 def payment_stats(db: Session = Depends(get_db)):
-    approved_amount = sum(
-        payment.amount
-        for payment in db.query(Payment).filter(Payment.status == "approved").all()
-    )
-    refunded_amount = sum(
-        payment.amount
-        for payment in db.query(Payment).filter(Payment.status == "refunded").all()
-    )
+    approved_amount = db.query(
+        func.coalesce(func.sum(Payment.amount), 0.0)
+    ).filter(Payment.status == "approved").scalar() or 0.0
+    refunded_amount = db.query(
+        func.coalesce(func.sum(Payment.amount), 0.0)
+    ).filter(Payment.status == "refunded").scalar() or 0.0
     pending_count = db.query(Payment).filter(Payment.status == "pending").count()
 
     return {
-        "total_revenue": approved_amount,
+        "total_revenue": float(approved_amount),
         "pending_count": pending_count,
-        "refunded_amount": refunded_amount,
+        "refunded_amount": float(refunded_amount),
     }
 
 
 @router.post("/payments/{payment_id}/refund")
-def refund_payment(payment_id: str, db: Session = Depends(get_db)):
+def refund_payment(
+    payment_id: str,
+    request: Request,
+    current_admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
     payment = db.query(Payment).filter(Payment.id == payment_id).first()
     if not payment:
         raise HTTPException(status_code=404, detail="Pagamento não encontrado.")
@@ -217,6 +238,19 @@ def refund_payment(payment_id: str, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(payment)
 
+    log_admin_action(
+        db,
+        admin_user=current_admin,
+        action="refund_payment",
+        resource_type="payment",
+        resource_id=payment.id,
+        details={
+            "amount": payment.amount,
+            "provider": payment.provider,
+        },
+        request=request,
+    )
+
     return {
         "message": "Pagamento marcado como reembolsado.",
         "payment_id": str(payment.id),
@@ -224,22 +258,50 @@ def refund_payment(payment_id: str, db: Session = Depends(get_db)):
     }
 
 @router.put("/users/{user_id}/premium")
-def premium(user_id: str, db: Session = Depends(get_db)):
+def premium(
+    user_id: str,
+    request: Request,
+    current_admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado.")
 
     user.is_premium = True
     db.commit()
+    log_admin_action(
+        db,
+        admin_user=current_admin,
+        action="set_premium",
+        resource_type="user",
+        resource_id=user.id,
+        details={"email": user.email},
+        request=request,
+    )
     return {"message": "Usuário Premium."}
 
 
 @router.delete("/users/{user_id}")
-def delete_user(user_id: str, db: Session = Depends(get_db)):
+def delete_user(
+    user_id: str,
+    request: Request,
+    current_admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado.")
 
+    log_admin_action(
+        db,
+        admin_user=current_admin,
+        action="delete_user",
+        resource_type="user",
+        resource_id=user.id,
+        details={"email": user.email},
+        request=request,
+    )
     db.delete(user)
     db.commit()
     return {"message": "Usuário removido."}
@@ -247,7 +309,12 @@ def delete_user(user_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/users/{user_id}/block")
-def block_user(user_id: str, db: Session = Depends(get_db)):
+def block_user(
+    user_id: str,
+    request: Request,
+    current_admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado.")
@@ -262,11 +329,25 @@ def block_user(user_id: str, db: Session = Depends(get_db)):
         subscription.status = "blocked"
         subscription.updated_at = datetime.now(timezone.utc)
     db.commit()
+    log_admin_action(
+        db,
+        admin_user=current_admin,
+        action="block_user",
+        resource_type="user",
+        resource_id=user.id,
+        details={"email": user.email},
+        request=request,
+    )
     return {"message": "Usuário bloqueado."}
 
 
 @router.post("/users/{user_id}/unblock")
-def unblock_user(user_id: str, db: Session = Depends(get_db)):
+def unblock_user(
+    user_id: str,
+    request: Request,
+    current_admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado.")
@@ -281,13 +362,24 @@ def unblock_user(user_id: str, db: Session = Depends(get_db)):
         subscription.status = "active"
         subscription.updated_at = datetime.now(timezone.utc)
     db.commit()
+    log_admin_action(
+        db,
+        admin_user=current_admin,
+        action="unblock_user",
+        resource_type="user",
+        resource_id=user.id,
+        details={"email": user.email},
+        request=request,
+    )
     return {"message": "Usuário desbloqueado."}
 
 
 @router.post("/users/{user_id}/plan")
 def change_user_plan(
     user_id: str,
+    request: Request,
     payload: dict = Body(...),
+    current_admin: User = Depends(get_admin_user),
     db: Session = Depends(get_db),
 ):
     user = db.query(User).filter(User.id == user_id).first()
@@ -308,12 +400,23 @@ def change_user_plan(
         subscription.plan = plan
         subscription.updated_at = datetime.now(timezone.utc)
     db.commit()
+    log_admin_action(
+        db,
+        admin_user=current_admin,
+        action="change_user_plan",
+        resource_type="user",
+        resource_id=user.id,
+        details={"email": user.email, "new_plan": plan},
+        request=request,
+    )
     return {"message": f"Plano do usuário atualizado para {plan}."}
 
 
 @router.post("/announcements/email")
 def send_announcement_email(
     payload: AdminEmailAnnouncementRequest,
+    request: Request,
+    current_admin: User = Depends(get_admin_user),
     db: Session = Depends(get_db),
 ):
     recipients = [
@@ -335,6 +438,20 @@ def send_announcement_email(
             message=payload.message,
         ):
             sent += 1
+
+    log_admin_action(
+        db,
+        admin_user=current_admin,
+        action="send_announcement_email",
+        resource_type="announcement",
+        resource_id=None,
+        details={
+            "title": payload.title,
+            "recipients": len(recipients),
+            "sent": sent,
+        },
+        request=request,
+    )
 
     return {
         "message": "Comunicado processado.",
@@ -359,7 +476,7 @@ def catalog(
     items = query.offset((page - 1) * limit).limit(limit).all()
     
     return {
-        "data": items,
+        "data": [MediaResponse.model_validate(item).model_dump(mode="json") for item in items],
         "total": total,
         "page": page,
         "limit": limit,
@@ -367,18 +484,37 @@ def catalog(
 
 
 @router.delete("/catalog/{media_id}")
-def delete_media(media_id: str, db: Session = Depends(get_db)):
+def delete_media(
+    media_id: str,
+    request: Request,
+    current_admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
     media = db.query(MediaContent).filter(MediaContent.id == media_id).first()
     if not media:
         raise HTTPException(status_code=404, detail="Conteúdo não encontrado.")
 
+    log_admin_action(
+        db,
+        admin_user=current_admin,
+        action="delete_media",
+        resource_type="media",
+        resource_id=media.id,
+        details={"title": media.title, "content_type": media.content_type},
+        request=request,
+    )
     db.delete(media)
     db.commit()
     return {"message": "Conteúdo removido."}
 
 
 @router.post("/upload")
-async def upload_video(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_video(
+    request: Request,
+    file: UploadFile = File(...),
+    current_admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
     original_name = Path(file.filename or "").name
     extension = Path(original_name).suffix.lower()
     if extension not in ALLOWED_UPLOAD_EXTENSIONS:
@@ -409,7 +545,15 @@ async def upload_video(file: UploadFile = File(...), db: Session = Depends(get_d
     await file.close()
 
     output_folder = Path("storage/streams") / str(uuid4())
-    master = process_video(str(path), str(output_folder))
+    try:
+        master = process_video(str(path), str(output_folder))
+    except Exception as exc:
+        path.unlink(missing_ok=True)
+        shutil.rmtree(output_folder, ignore_errors=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Falha ao processar o vídeo.",
+        ) from exc
 
     media = MediaContent(
         title=file.filename,
@@ -421,6 +565,20 @@ async def upload_video(file: UploadFile = File(...), db: Session = Depends(get_d
     db.add(media)
     db.commit()
     db.refresh(media)
+
+    log_admin_action(
+        db,
+        admin_user=current_admin,
+        action="upload_video",
+        resource_type="media",
+        resource_id=media.id,
+        details={
+            "filename": file.filename,
+            "size_bytes": total_written,
+            "stream": master.replace("\\", "/"),
+        },
+        request=request,
+    )
 
     return {
         "filename": file.filename,
@@ -610,7 +768,13 @@ def get_trials_analytics(db: Session = Depends(get_db)):
 
 
 @router.post("/trials/{user_id}/extend")
-def extend_trial(user_id: str, days: int = 3, db: Session = Depends(get_db)):
+def extend_trial(
+    user_id: str,
+    days: int = 3,
+    request: Request = None,
+    current_admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
     """Estender o trial de um usuário."""
     subscription = (
         db.query(Subscription)
@@ -633,6 +797,20 @@ def extend_trial(user_id: str, days: int = 3, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(subscription)
 
+    log_admin_action(
+        db,
+        admin_user=current_admin,
+        action="extend_trial",
+        resource_type="subscription",
+        resource_id=subscription.id,
+        details={
+            "user_id": user_id,
+            "days": days,
+            "new_trial_ends_at": subscription.trial_ends_at,
+        },
+        request=request,
+    )
+
     return {
         "message": f"Trial estendido por {days} dias.",
         "trial_ends_at": subscription.trial_ends_at,
@@ -640,7 +818,12 @@ def extend_trial(user_id: str, days: int = 3, db: Session = Depends(get_db)):
 
 
 @router.post("/trials/{user_id}/cancel")
-def cancel_trial(user_id: str, db: Session = Depends(get_db)):
+def cancel_trial(
+    user_id: str,
+    request: Request = None,
+    current_admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
     """Cancelar trial de um usuário."""
     subscription = (
         db.query(Subscription)
@@ -661,6 +844,16 @@ def cancel_trial(user_id: str, db: Session = Depends(get_db)):
 
     db.commit()
     db.refresh(subscription)
+
+    log_admin_action(
+        db,
+        admin_user=current_admin,
+        action="cancel_trial",
+        resource_type="subscription",
+        resource_id=subscription.id,
+        details={"user_id": user_id},
+        request=request,
+    )
 
     return {
         "message": "Trial cancelado.",

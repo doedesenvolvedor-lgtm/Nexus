@@ -6,6 +6,7 @@ import 'app/app.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
 import 'providers/favorites_provider.dart';
+import 'providers/parental_control_provider.dart';
 import 'providers/profile_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/trial_provider.dart';
@@ -47,10 +48,11 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => FavoritesProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => ParentalControlProvider()),
         ChangeNotifierProvider(create: (_) => TrialProvider()),
         ChangeNotifierProvider(create: (_) => MercadoPagoProvider()),
       ],
