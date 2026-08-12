@@ -106,33 +106,59 @@ async def stripe_webhook(
     """
     Webhook para eventos do Stripe.
     Valida assinatura usando Stripe-Signature e processa via WebhookValidator.
+    A assinatura é OBRIGATÓRIA - nunca processa webhook não assinado.
     """
+    if not STRIPE_WEBHOOK_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Webhook Stripe nao configurado.",
+        )
+
+    idempotency_key = (
+        request.headers.get("X-Idempotency-Key")
+        or request.headers.get("Idempotency-Key")
+        or request.headers.get("X-Request-ID")
+    )
+
+    lock_key = None
+    processed = False
+    if idempotency_key:
+        lock_key = f"webhook:idempotency:{idempotency_key}"
+        if not acquire_lock(lock_key, ttl_seconds=300):
+            logger.info(f"Webhook Stripe duplicado ignorado: {idempotency_key}")
+            return {"status": "already_processed", "message": "Webhook ja processado."}
+
     try:
         stripe_signature = request.headers.get("Stripe-Signature")
         body = await request.body()
 
-        if STRIPE_WEBHOOK_SECRET and stripe_signature:
-            is_valid = WebhookValidator.validate_stripe_signature(
-                stripe_signature=stripe_signature,
-                body=body,
-                webhook_secret=STRIPE_WEBHOOK_SECRET,
+        if not stripe_signature:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Assinatura do Stripe ausente",
             )
-            if not is_valid:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Assinatura do Stripe invalida",
-                )
+
+        is_valid = WebhookValidator.validate_stripe_signature(
+            stripe_signature=stripe_signature,
+            body=body,
+            webhook_secret=STRIPE_WEBHOOK_SECRET,
+        )
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Assinatura do Stripe invalida",
+            )
 
         payload = await request.json()
-        success = WebhookValidator.process_payment_webhook(payload, db)
+        success = WebhookValidator.process_payment_webhook(payload, db, provider="stripe")
 
         if success:
+            processed = True
             return {"status": "received", "message": "Webhook do Stripe processado"}
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Erro ao processar webhook do Stripe",
-            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erro ao processar webhook do Stripe",
+        )
 
     except HTTPException:
         raise
@@ -142,6 +168,9 @@ async def stripe_webhook(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Erro ao processar webhook",
         )
+    finally:
+        if idempotency_key and not processed:
+            release_lock(lock_key)
 
 
 @router.get("/test")

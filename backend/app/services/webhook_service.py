@@ -61,6 +61,7 @@ class WebhookValidator:
             v1 = None
 
             for part in parts:
+                part = part.strip()
                 if part.startswith("ts="):
                     ts = part.replace("ts=", "")
                 elif part.startswith("v1="):
@@ -70,7 +71,13 @@ class WebhookValidator:
                 logger.warning("Invalid signature format")
                 return False
 
-            message = f"{x_request_id}|{webhook_secret}|{ts}|{body.decode()}"
+            try:
+                decoded_body = body.decode("utf-8")
+            except UnicodeDecodeError:
+                logger.warning("Unable to decode webhook body as UTF-8")
+                return False
+
+            message = f"{x_request_id}|{webhook_secret}|{ts}|{decoded_body}"
             expected_hmac = hmac.new(
                 webhook_secret.encode(), message.encode(), hashlib.sha256
             ).hexdigest()
@@ -91,16 +98,21 @@ class WebhookValidator:
         stripe_signature: Optional[str],
         body: bytes,
         webhook_secret: str,
+        tolerance_seconds: int = 300,
     ) -> bool:
-        """Valida assinatura do webhook Stripe."""
+        """
+        Valida assinatura do webhook Stripe conforme spec oficial.
+
+        Stripe envia: Stripe-Signature: t=<timestamp>,v1=<hmac_sha256>
+        O HMAC é calculado sobre: "<timestamp>.<body>"
+        Também valida que o timestamp não é muito antigo (anti-replay).
+        """
         if not stripe_signature:
             logger.warning("Missing Stripe-Signature header")
             return False
 
         try:
-            expected_sig = hmac.new(
-                webhook_secret.encode(), body, hashlib.sha256
-            ).hexdigest()
+            import time
 
             sig_parts = {}
             for part in stripe_signature.split(","):
@@ -108,17 +120,41 @@ class WebhookValidator:
                 if len(kv) == 2:
                     sig_parts[kv[0]] = kv[1]
 
-            received_sig = sig_parts.get("v1", "")
-            return hmac.compare_digest(expected_sig, received_sig)
+            timestamp = sig_parts.get("t")
+            received_sig = sig_parts.get("v1")
+
+            if not timestamp or not received_sig:
+                logger.warning("Invalid Stripe signature format (missing t or v1)")
+                return False
+
+            # Anti-replay: rejeitar assinaturas muito antigas
+            try:
+                if abs(time.time() - int(timestamp)) > tolerance_seconds:
+                    logger.warning("Stripe signature timestamp too old (replay risk)")
+                    return False
+            except ValueError:
+                logger.warning("Invalid Stripe signature timestamp")
+                return False
+
+            # Payload assinado: "<timestamp>.<body>"
+            signed_payload = f"{timestamp}.".encode() + body
+            expected_sig = hmac.new(
+                webhook_secret.encode(), signed_payload, hashlib.sha256
+            ).hexdigest()
+
+            is_valid = hmac.compare_digest(expected_sig, received_sig)
+            if not is_valid:
+                logger.warning("Stripe HMAC mismatch - possible webhook tampering")
+            return is_valid
 
         except Exception as e:
             logger.error(f"Error validating Stripe signature: {e}")
             return False
 
     @staticmethod
-    def process_payment_webhook(payload: dict, db: Session) -> bool:
+    def process_payment_webhook(payload: dict, db: Session, provider: str = "mercadopago") -> bool:
         """
-        Processa webhook de pagamento (MercadoPago ou Stripe).
+        Processa webhook de pagamento.
         UNICO ponto de processamento de pagamentos.
         """
         try:
@@ -126,7 +162,10 @@ class WebhookValidator:
             action = payload.get("action")
             data = payload.get("data", {})
 
-            logger.info(f"Processing webhook: type={webhook_type}, action={action}")
+            logger.info(f"Processing webhook: provider={provider}, type={webhook_type}, action={action}")
+
+            if provider == "stripe":
+                return _process_stripe_notification(payload, db)
 
             if webhook_type == "payment":
                 return _process_payment_notification(payload, db)
@@ -249,12 +288,29 @@ def _process_subscription_notification(data: dict, db: Session) -> bool:
         subscription = None
         if external_reference and "_plan_" in external_reference:
             user_id_str = external_reference.split("_plan_")[0].replace("user_", "")
-            subscription = (
-                db.query(Subscription)
-                .filter(Subscription.user_id == user_id_str)
-                .order_by(Subscription.created_at.desc())
-                .first()
-            )
+            try:
+                user_uuid = UUID(user_id_str)
+            except ValueError:
+                user_uuid = None
+
+            if user_uuid:
+                subscription = (
+                    db.query(Subscription)
+                    .filter(Subscription.user_id == user_uuid)
+                    .order_by(Subscription.created_at.desc())
+                    .first()
+                )
+
+        if subscription is None and subscription_id:
+            try:
+                subscription_uuid = UUID(subscription_id)
+                subscription = (
+                    db.query(Subscription)
+                    .filter(Subscription.id == subscription_uuid)
+                    .first()
+                )
+            except ValueError:
+                subscription = None
 
         if subscription:
             subscription.status = status
@@ -263,10 +319,128 @@ def _process_subscription_notification(data: dict, db: Session) -> bool:
             logger.info(f"Subscription updated: {subscription_id}")
             return True
         else:
-            logger.warning(f"Subscription not found for external_ref: {external_reference}")
+            logger.warning(
+                f"Subscription not found for external_ref: {external_reference} or subscription_id: {subscription_id}"
+            )
             return False
 
     except Exception as e:
         logger.error(f"Error processing subscription webhook: {e}", exc_info=True)
+        db.rollback()
+        return False
+
+
+def _process_stripe_notification(payload: dict, db: Session) -> bool:
+    """Processa notificacao de webhook do Stripe."""
+    try:
+        event_type = payload.get("type")
+        data = payload.get("data", {})
+        obj = data.get("object", {})
+
+        if event_type in ("payment_intent.succeeded", "charge.succeeded", "checkout.session.completed", "invoice.payment_succeeded"):
+            payment_id = obj.get("id") or obj.get("payment_intent")
+            metadata = obj.get("metadata", {}) or {}
+            external_reference = (
+                obj.get("client_reference_id")
+                or metadata.get("external_reference")
+                or metadata.get("external_reference")
+                or metadata.get("external_reference")
+            )
+
+            if not payment_id:
+                logger.warning("Stripe webhook sem payment_id")
+                return False
+
+            if not external_reference:
+                logger.warning("Stripe webhook sem external_reference")
+                return False
+
+            user_id_str = None
+            plan = None
+            if "user_" in external_reference and "_plan_" in external_reference:
+                try:
+                    user_id_str, plan = external_reference.split("_plan_")
+                    user_id_str = user_id_str.replace("user_", "")
+                except ValueError:
+                    user_id_str = None
+            else:
+                user_id_str = metadata.get("user_id")
+                plan = metadata.get("plan")
+
+            if not user_id_str:
+                logger.warning("Stripe webhook external_reference invalido")
+                return False
+
+            try:
+                user_id = UUID(user_id_str)
+            except ValueError:
+                logger.error(f"Invalid user_id in Stripe metadata: {user_id_str}")
+                return False
+
+            lock_key = f"payment:processing:{user_id}"
+            if not acquire_lock(lock_key, ttl_seconds=10):
+                logger.warning(f"Payment already being processed for user {user_id}")
+                return True
+
+            try:
+                payment = (
+                    db.query(Payment)
+                    .filter(Payment.payment_id == payment_id)
+                    .first()
+                )
+
+                if not payment:
+                    payment = (
+                        db.query(Payment)
+                        .filter(Payment.user_id == user_id)
+                        .order_by(Payment.created_at.desc())
+                        .first()
+                    )
+
+                if not payment:
+                    logger.warning(f"No payment found for Stripe event user {user_id}")
+                    return False
+
+                new_status = "approved"
+                previous_status = payment.status
+                if new_status != previous_status:
+                    payment.status = new_status
+                    payment.payment_id = str(payment_id)
+                    payment.updated_at = datetime.now(timezone.utc)
+
+                    if new_status == "approved":
+                        subscription = (
+                            db.query(Subscription)
+                            .filter(Subscription.user_id == user_id)
+                            .first()
+                        )
+                        if subscription and plan:
+                            subscription.plan_type = plan
+                            subscription.status = "active"
+                            subscription.updated_at = datetime.now(timezone.utc)
+
+                        user = db.query(User).filter(User.id == user_id).first()
+                        if user and previous_status != "approved":
+                            get_email_service().send_payment_receipt_email(
+                                to_email=user.email,
+                                plan=payment.plan or plan,
+                                amount=payment.amount,
+                                payment_id=str(payment_id),
+                                status="approved",
+                            )
+
+                    db.commit()
+                    logger.info(f"Stripe payment {payment_id} updated to approved")
+
+            finally:
+                release_lock(lock_key)
+
+            return True
+
+        logger.warning(f"Stripe event type ignored: {event_type}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Error processing Stripe webhook: {e}", exc_info=True)
         db.rollback()
         return False

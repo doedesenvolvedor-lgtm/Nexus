@@ -262,8 +262,8 @@ class EpisodeResponse(BaseModel):
 class RatingCreate(BaseModel):
     profile_id: UUID
     media_id: UUID
-    stars: int
-    comment: Optional[str] = None
+    stars: int = Field(..., ge=1, le=5, description="Avaliação de 1 a 5 estrelas")
+    comment: Optional[str] = Field(None, max_length=500)
 
 
 class RatingResponse(BaseModel):
@@ -286,6 +286,24 @@ class WatchListResponse(BaseModel):
     id: UUID
     profile_id: UUID
     media_id: UUID
+
+    class Config:
+        from_attributes = True
+
+
+class PlaybackHistoryCreate(BaseModel):
+    profile_id: UUID
+    media_id: UUID
+    last_position_seconds: Optional[int] = 0
+    is_finished: bool = False
+
+
+class PlaybackHistoryResponse(BaseModel):
+    id: UUID
+    profile_id: UUID
+    media_id: UUID
+    last_position_seconds: int = 0
+    is_finished: bool = False
 
     class Config:
         from_attributes = True
@@ -352,3 +370,237 @@ class PaymentResponse(BaseModel):
 class AdminEmailAnnouncementRequest(BaseModel):
     title: str
     message: str
+
+
+# ===== Live TV / Channels =====
+
+class LiveChannelCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    url: str = Field(..., min_length=5, max_length=2000)
+    logo_url: Optional[str] = Field(None, max_length=500)
+    category: Optional[str] = Field(None, max_length=100)
+    description: Optional[str] = Field(None, max_length=1000)
+    is_active: bool = True
+    is_verified: bool = False
+
+
+class LiveChannelUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    url: Optional[str] = Field(None, min_length=5, max_length=2000)
+    logo_url: Optional[str] = Field(None, max_length=500)
+    category: Optional[str] = Field(None, max_length=100)
+    description: Optional[str] = Field(None, max_length=1000)
+    is_active: Optional[bool] = None
+
+
+class LiveChannelResponse(BaseModel):
+    id: UUID
+    name: str
+    url: str
+    logo_url: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    is_active: bool = True
+    is_verified: bool = False
+    source: str = "manual"
+    last_checked_at: Optional[datetime] = None
+    added_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class M3U8PlaylistCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    source_url: Optional[str] = Field(None, max_length=2000)
+    source_type: str = Field(default="url", pattern=r"^(url|file|manual)$")
+
+
+class M3U8PlaylistResponse(BaseModel):
+    id: UUID
+    name: str
+    source_url: Optional[str] = None
+    source_type: str = "url"
+    status: str = "active"
+    total_channels: int = 0
+    valid_channels: int = 0
+    invalid_channels: int = 0
+    last_import_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ===== Admin Audit Logs =====
+
+class AdminAuditLogResponse(BaseModel):
+    id: UUID
+    admin_user_id: Optional[UUID] = None
+    admin_email: Optional[str] = None
+    action: str
+    resource_type: str
+    resource_id: Optional[UUID] = None
+    details: Optional[dict] = None
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    status: str = "success"
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ===== System Monitoring =====
+
+class SystemStorageResponse(BaseModel):
+    total_bytes: int
+    used_bytes: int
+    free_bytes: int
+    used_percent: float
+    storage_paths: dict
+
+
+class SystemStatusResponse(BaseModel):
+    cpu_percent: float
+    memory_total_bytes: int
+    memory_used_bytes: int
+    memory_percent: float
+    disk_total_bytes: int
+    disk_used_bytes: int
+    disk_percent: float
+    uptime_seconds: float
+    python_version: str
+
+
+class ReleaseInfoResponse(BaseModel):
+    name: str
+    size_mb: float
+    download_url: str
+    date: str
+    type: str = "APK Release"
+
+
+# ===== Content Maintenance =====
+
+class MaintenanceCheckResponse(BaseModel):
+    total_media: int
+    checked: int
+    invalid_links: int
+    fixed: int
+    errors: list[dict]
+
+
+class TMDbImportResponse(BaseModel):
+    success: bool
+    message: str
+    media_id: Optional[str] = None
+
+
+# ===== Controle Parental =====
+
+class ParentalSettingsUpdate(BaseModel):
+    max_rating: Optional[str] = Field(None, pattern=r'^(LIVRE|10|12|14|16|18)$')  # Classificação máxima
+    daily_time_limit_minutes: Optional[int] = Field(None, ge=0, le=1440)  # 0 = sem limite
+    allowed_start_time: Optional[str] = Field(None, pattern=r'^([01]\d|2[0-3]):[0-5]\d$')  # HH:MM
+    allowed_end_time: Optional[str] = Field(None, pattern=r'^([01]\d|2[0-3]):[0-5]\d$')  # HH:MM
+    hide_adult_content: Optional[bool] = None
+    locked_by_pin: Optional[bool] = None
+    biometric_enabled: Optional[bool] = None
+    require_auth_after_minutes: Optional[int] = Field(None, ge=1, le=1440)
+    block_adult_channels: Optional[bool] = None
+
+
+class ParentalSettingsResponse(BaseModel):
+    profile_id: UUID
+    max_rating: str = "18"
+    daily_time_limit_minutes: int = 0
+    allowed_start_time: str = "00:00"
+    allowed_end_time: str = "23:59"
+    hide_adult_content: bool = True
+    locked_by_pin: bool = True
+    biometric_enabled: bool = False
+    require_auth_after_minutes: int = 30
+    block_adult_channels: bool = True
+    has_pin: bool = False
+
+    class Config:
+        from_attributes = True
+
+
+class PinSetRequest(BaseModel):
+    pin: str = Field(..., min_length=4, max_length=8, pattern=r'^\d{4,8}$')  # 4 a 8 dígitos
+
+
+class PinVerifyRequest(BaseModel):
+    pin: str = Field(..., min_length=4, max_length=8, pattern=r'^\d{4,8}$')  # 4 a 8 dígitos
+
+
+class BlockedChannelCreate(BaseModel):
+    channel_id: UUID
+    reason: Optional[str] = Field(None, max_length=100)
+
+
+class BlockedChannelResponse(BaseModel):
+    id: UUID
+    profile_id: UUID
+    channel_id: UUID
+    blocked_by_admin: bool = False
+    reason: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AccessAttemptResponse(BaseModel):
+    id: UUID
+    profile_id: UUID
+    content_type: str
+    target_id: Optional[UUID] = None
+    target_title: Optional[str] = None
+    action: str
+    detail: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AccessCheckRequest(BaseModel):
+    profile_id: UUID
+    content_type: str = Field(..., pattern=r'^(movie|series|channel|category)$')
+    target_id: Optional[UUID] = None
+    rating: Optional[str] = None
+    title: Optional[str] = Field(None, max_length=255)
+
+
+class AccessCheckResponse(BaseModel):
+    allowed: bool
+    requires_pin: bool = False
+    reason: Optional[str] = None
+    message: Optional[str] = None
+
+
+class ContentRatingSet(BaseModel):
+    content_type: str = Field(..., pattern=r'^(media|channel|category)$')
+    content_id: Optional[UUID] = None
+    category: Optional[str] = Field(None, max_length=100)
+    rating: str = Field(..., pattern=r'^(LIVRE|10|12|14|16|18)$')
+    is_adult: bool = False
+
+
+class ContentRatingResponse(BaseModel):
+    id: UUID
+    content_type: str
+    content_id: Optional[UUID] = None
+    category: Optional[str] = None
+    rating: str
+    is_adult: bool
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

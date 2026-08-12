@@ -20,9 +20,10 @@ import {
   FiFileText,
   FiBell,
   FiGift,
-  FiLink2,
+FiLink2,
   FiGrid,
   FiClock,
+  FiShield,
 } from 'react-icons/fi'
 
 const menuItems = [
@@ -96,6 +97,11 @@ const menuItems = [
     label: 'Configurações',
     path: '/settings',
     icon: FiSettings,
+  },
+  {
+    label: 'Controle Parental',
+    path: '/parental',
+    icon: FiShield,
   },
 ]
 

@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text, JSON
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text, JSON, Time
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -191,3 +191,162 @@ class DeviceToken(Base):
     last_used_at = Column(DateTime(timezone=True), nullable=True)
 
     user = relationship("User")
+
+
+class LiveChannel(Base):
+    __tablename__ = "live_channels"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    url = Column(Text, nullable=False)
+    logo_url = Column(Text, nullable=True)
+    category = Column(String(100), nullable=True)
+    description = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
+    source = Column(String(50), default="manual")  # manual, m3u8_import
+    m3u8_playlist_id = Column(UUID(as_uuid=True), ForeignKey("m3u8_playlists.id"), nullable=True)
+    last_checked_at = Column(DateTime(timezone=True), nullable=True)
+    added_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    playlist = relationship("M3U8Playlist", back_populates="channels")
+
+
+class M3U8Playlist(Base):
+    __tablename__ = "m3u8_playlists"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    source_url = Column(Text, nullable=True)
+    source_type = Column(String(20), default="url")  # url, file, manual
+    status = Column(String(20), default="active")  # active, inactive, error
+    total_channels = Column(Integer, default=0)
+    valid_channels = Column(Integer, default=0)
+    invalid_channels = Column(Integer, default=0)
+    last_import_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    channels = relationship("LiveChannel", back_populates="playlist", cascade="all, delete-orphan")
+
+
+class AdminAuditLog(Base):
+    __tablename__ = "admin_audit_logs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    admin_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
+    admin_email = Column(String(255), nullable=True)
+    action = Column(String(100), nullable=False, index=True)
+    resource_type = Column(String(50), nullable=False)
+    resource_id = Column(UUID(as_uuid=True), nullable=True)
+    details = Column(JSON, nullable=True)
+    ip_address = Column(String(45), nullable=True)
+    user_agent = Column(Text, nullable=True)
+    status = Column(String(20), default="success")  # success, failure, denied
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    admin = relationship("User")
+
+
+class ParentalControlSettings(Base):
+    """
+    Configurações de Controle Parental por perfil.
+    """
+    __tablename__ = "parental_control_settings"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    profile_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=False, unique=True, index=True)
+    # Classificação máxima permitida: LIVRE, 10, 12, 14, 16, 18
+    max_rating = Column(String(10), default="18", nullable=False)
+    # Tempo máximo de uso diário em minutos (0 = sem limite)
+    daily_time_limit_minutes = Column(Integer, default=0, nullable=False)
+    # Horários permitidos (formato "HH:MM")
+    allowed_start_time = Column(String(5), default="00:00", nullable=False)
+    allowed_end_time = Column(String(5), default="23:59", nullable=False)
+    # Ocultar completamente o conteúdo +18 da interface
+    hide_adult_content = Column(Boolean, default=True, nullable=False)
+    # Exigir autenticação (PIN/biometria) para alterar configurações
+    locked_by_pin = Column(Boolean, default=True, nullable=False)
+    # Biometria habilitada
+    biometric_enabled = Column(Boolean, default=False, nullable=False)
+    # Re-autenticação após X minutos de inatividade
+    require_auth_after_minutes = Column(Integer, default=30, nullable=False)
+    # Bloquear canais classificados como adultos automaticamente
+    block_adult_channels = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    profile = relationship("Profile")
+
+
+class ParentalPin(Base):
+    """
+    PIN do Controle Parental por perfil (armazenado com hash bcrypt).
+    """
+    __tablename__ = "parental_pins"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    profile_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=False, unique=True, index=True)
+    # Hash bcrypt do PIN (nunca armazenar plaintext)
+    pin_hash = Column(Text, nullable=False)
+    failed_attempts = Column(Integer, default=0, nullable=False)
+    locked_until = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    profile = relationship("Profile")
+
+
+class BlockedChannel(Base):
+    """
+    Canal de TV bloqueado para um perfil específico.
+    """
+    __tablename__ = "blocked_channels"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    profile_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=False, index=True)
+    channel_id = Column(UUID(as_uuid=True), ForeignKey("live_channels.id"), nullable=False)
+    # True se bloqueado por regra global (admin / categoria adulta)
+    blocked_by_admin = Column(Boolean, default=False, nullable=False)
+    reason = Column(String(100), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    profile = relationship("Profile")
+    channel = relationship("LiveChannel")
+
+
+class AccessAttempt(Base):
+    """
+    Histórico de tentativas de acesso a conteúdo bloqueado/liberado.
+    """
+    __tablename__ = "access_attempts"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    profile_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=False, index=True)
+    content_type = Column(String(30), nullable=False)  # movie, series, channel, category
+    target_id = Column(UUID(as_uuid=True), nullable=True)
+    target_title = Column(String(255), nullable=True)
+    action = Column(String(20), nullable=False)  # granted, blocked_pin, blocked_rating, blocked_time, blocked_channel
+    detail = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    profile = relationship("Profile")
+
+
+class ContentRating(Base):
+    """
+    Classificação indicativa de conteúdo (admin global).
+    """
+    __tablename__ = "content_ratings"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    content_type = Column(String(20), nullable=False)  # media, channel, category
+    content_id = Column(UUID(as_uuid=True), nullable=True)
+    category = Column(String(100), nullable=True)
+    rating = Column(String(10), nullable=False)  # LIVRE, 10, 12, 14, 16, 18
+    is_adult = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    admin = relationship("User", primaryjoin="ContentRating.id == User.id", viewonly=True)

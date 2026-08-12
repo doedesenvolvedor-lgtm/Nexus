@@ -33,6 +33,8 @@ FRONTEND_RESET_PASSWORD_URL = os.getenv(
     "FRONTEND_RESET_PASSWORD_URL", f"{FRONTEND_URL}/reset-password"
 )
 
+TRUSTED_HOSTS = _parse_csv_env("TRUSTED_HOSTS")
+
 SMTP_SERVER = os.getenv("SMTP_SERVER")
 SMTP_PORT = _get_env_int("SMTP_PORT", 465)
 SMTP_USER = os.getenv("SMTP_USER")
@@ -52,6 +54,19 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "").strip()
 # ===== Admin & Billing Exceptions =====
 ADMIN_EMAILS = _parse_csv_env("ADMIN_EMAILS")
 NON_BILLING_PREMIUM_EMAILS = _parse_csv_env("NON_BILLING_PREMIUM_EMAILS")
+
+# ===== TMDb Integration =====
+TMDB_API_KEY = os.getenv("TMDB_API_KEY", "").strip()
+TMDB_BASE_URL = os.getenv("TMDB_BASE_URL", "https://api.themoviedb.org/3")
+TMDB_IMAGE_BASE_URL = os.getenv("TMDB_IMAGE_BASE_URL", "https://image.tmdb.org/t/p")
+TMDB_LANGUAGE = os.getenv("TMDB_LANGUAGE", "pt-BR").strip()
+
+# ===== Content Maintenance =====
+CONTENT_MAINTENANCE_INTERVAL = _get_env_int("CONTENT_MAINTENANCE_INTERVAL", 86400)  # 24h
+LIVE_CHANNEL_REFRESH_INTERVAL = _get_env_int("LIVE_CHANNEL_REFRESH_INTERVAL", 3600)  # 1h
+
+# ===== Live TV =====
+LIVE_CHANNELS_CACHE_TTL = _get_env_int("LIVE_CHANNELS_CACHE_TTL", 300)  # 5min
 
 # ===== Environment =====
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()

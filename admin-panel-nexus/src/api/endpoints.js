@@ -210,6 +210,10 @@ export const channelsAPI = {
   create: (data) => api.post('/admin/channels', data),
   update: (id, data) => api.put(`/admin/channels/${id}`, data),
   delete: (id) => api.delete(`/admin/channels/${id}`),
+  // Classificação & bloqueio de canais (controle parental)
+  setRating: (channelId, data) => api.post(`/admin/channels/${channelId}/rating`, data),
+  block: (channelId) => api.post(`/admin/channels/${channelId}/block`),
+  unblock: (channelId) => api.post(`/admin/channels/${channelId}/unblock`),
 }
 
 // ===== LOGS =====
@@ -227,6 +231,28 @@ export const settingsAPI = {
   testSMTP: (config) => api.post('/admin/settings/test-smtp', config),
   backupDatabase: () => api.post('/admin/settings/backup'),
   restoreDatabase: (backupId) => api.post(`/admin/settings/restore`, { backup_id: backupId }),
+}
+
+// ===== CONTROLE PARENTAL =====
+export const parentalControlAPI = {
+  // Regras globais & estatísticas
+  getStats: () => api.get('/parental/admin/stats'),
+// Classificações de conteúdo (admin)
+  listContentRatings: () => api.get('/parental/content-ratings'),
+  setContentRating: (data) => api.post('/parental/content-ratings', data),
+  deleteRating: (id) => api.delete(`/parental/content-ratings/${id}`),
+  // Canais bloqueados por perfil
+  listBlockedChannels: (profileId) => api.get(`/parental/channels/blocked/${profileId}`),
+  blockChannel: (profileId, channelId) =>
+    api.post(`/parental/channels/${profileId}/block`, { channel_id: channelId }),
+  unblockChannel: (profileId, channelId) =>
+    api.delete(`/parental/channels/${profileId}/unblock/${channelId}`),
+  // Configurações por perfil
+  getSettings: (profileId) => api.get(`/parental/settings/${profileId}`),
+  updateSettings: (profileId, data) => api.put(`/parental/settings/${profileId}`, data),
+  // Histórico de tentativas
+  getAttempts: (profileId, limit = 50) =>
+    api.get(`/parental/attempts/${profileId}`, { params: { limit } }),
 }
 
 // ===== ANALYTICS =====

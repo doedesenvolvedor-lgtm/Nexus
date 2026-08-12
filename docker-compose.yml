@@ -5,12 +5,15 @@ services:
     environment:
       POSTGRES_DB: ${DB_NAME:-nexus}
       POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./backend/database/005_add_indexes.sql:/docker-entrypoint-initdb.d/05-add-indexes.sql:ro
+      - ./backend/database/006_add_live_tv_tables.sql:/docker-entrypoint-initdb.d/06-add-live-tv.sql:ro
+      - ./backend/database/007_add_admin_audit_logs.sql:/docker-entrypoint-initdb.d/07-add-audit-logs.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-nexus}"]
       interval: 10s
@@ -31,7 +34,7 @@ services:
     volumes:
       - redis_data:/data
 
-backend:
+  backend:
     build:
       context: ./backend
     restart: always
@@ -44,10 +47,10 @@ backend:
       redis:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-nexus}
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-nexus}
       REDIS_URL: redis://:${REDIS_PASSWORD:-nexus_redis_secure}@redis:6379/0
       REDIS_PASSWORD: ${REDIS_PASSWORD:-nexus_redis_secure}
-      SECRET_KEY: ${SECRET_KEY:-change-me-in-production-nexus-twos}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set in production}
       ADMIN_EMAILS: ${ADMIN_EMAILS:-admin@nexus.com}
       NON_BILLING_PREMIUM_EMAILS: ${NON_BILLING_PREMIUM_EMAILS:-}
       ENVIRONMENT: ${ENVIRONMENT:-production}
@@ -55,26 +58,49 @@ backend:
       - /var/log/nexus:/var/log/nexus
       - ./storage:/app/storage
 
-    worker:
-      build:
+  worker:
+    build:
       context: ./backend
     command: python -m workers.queue_worker
-     restart: always
+    restart: always
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-nexus}
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-nexus}
       REDIS_URL: redis://:${REDIS_PASSWORD:-nexus_redis_secure}@redis:6379/0
       REDIS_PASSWORD: ${REDIS_PASSWORD:-nexus_redis_secure}
-      SECRET_KEY: ${SECRET_KEY:-change-me-in-production-nexus-twos}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set in production}
       ADMIN_EMAILS: ${ADMIN_EMAILS:-admin@nexus.com}
       NON_BILLING_PREMIUM_EMAILS: ${NON_BILLING_PREMIUM_EMAILS:-}
       ENVIRONMENT: ${ENVIRONMENT:-production}
     volumes:
       - /var/log/nexus:/var/log/nexus
+      - ./storage:/app/storage
+
+  content-maintenance-worker:
+    build:
+      context: ./backend
+    command: python -m workers.content_maintenance_worker
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-nexus}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-nexus_redis_secure}@redis:6379/0
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-nexus_redis_secure}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set in production}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-admin@nexus.com}
+      NON_BILLING_PREMIUM_EMAILS: ${NON_BILLING_PREMIUM_EMAILS:-}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+    volumes:
+      - /var/log/nexus:/var/log/nexus
+      - ./storage:/app/storage
 
   nginx:
     image: nginx:latest
@@ -119,7 +145,7 @@ backend:
       - "3000:3000"
     environment:
       GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD:-change_me_in_production}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD:?GF_ADMIN_PASSWORD must be set}
       GF_USERS_ALLOW_SIGN_UP: 'false'
       GF_SECURITY_ADMIN_PASSWORD_RESET_LINK_ENABLED: 'true'
     volumes:
@@ -136,7 +162,7 @@ backend:
       - "9093:9093"
     environment:
       SMTP_USER: ${SMTP_USER:-noreply@nexus.com}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-change_me_in_production}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:?SMTP_PASSWORD must be set}
       SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-noreply@nexus.com}
       SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-0}
@@ -156,7 +182,7 @@ backend:
     ports:
       - "9187:9187"
     environment:
-      DATA_SOURCE_NAME: "postgresql://postgres:postgres@postgres:5432/nexus?sslmode=disable"
+      DATA_SOURCE_NAME: "postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-nexus}?sslmode=disable"
     depends_on:
       - postgres
 
@@ -191,7 +217,7 @@ backend:
     image: gcr.io/cadvisor/cadvisor:latest
     restart: always
     ports:
-      - "8080:8080"
+      - "8081:8080"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -204,6 +230,7 @@ backend:
 
 volumes:
   postgres_data:
+  redis_data:
   prometheus_data:
   grafana_data:
   alertmanager_data:

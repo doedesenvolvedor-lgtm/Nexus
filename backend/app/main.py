@@ -13,13 +13,13 @@ from sqlalchemy import text
 from app.database import Base, engine
 from app.database import SessionLocal
 from app.logging_config import setup_logging
-from app.config import FRONTEND_URL, ADMIN_FRONTEND_URL, SECRET_KEY
+from app.config import FRONTEND_URL, ADMIN_FRONTEND_URL, SECRET_KEY, TRUSTED_HOSTS
 from app.exception_handlers import register_exception_handlers
 from app.metrics import PrometheusMiddleware
 from app.middleware.stream_auth import StreamAuthMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.services.admin_bootstrap_service import enforce_non_billing_premium_accounts
-from app.routers import admin, auth, downloads, episodes, history, media, notifications, payments, profiles, queue_jobs, ratings, recommendations, subscriptions, subscriptions_trial, watchlist, webhooks
+from app.routers import admin, audit, auth, content_maintenance, downloads, episodes, history, live_tv, m3u8_manager, media, notifications, parental_control, payments, profiles, queue_jobs, ratings, recommendations, subscriptions, subscriptions_trial, system_monitor, tmdb, watchlist, webhooks
 
 # Configura logging
 setup_logging()
@@ -51,6 +51,9 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-Idempotency-Key", "X-Stream-Token", "Accept"],  # Headers específicos
     max_age=3600,  # Cache preflight por 1 hora
 )
+
+if TRUSTED_HOSTS:
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=TRUSTED_HOSTS)
 
 # Registra exception handlers
 register_exception_handlers(app)
@@ -89,12 +92,19 @@ app.include_router(ratings.router, prefix="/ratings")
 app.include_router(watchlist.router, prefix="/watchlist")
 app.include_router(recommendations.router, prefix="/recommendations")
 app.include_router(subscriptions.router, prefix="/subscription")
+app.include_router(parental_control.router)
 app.include_router(subscriptions_trial.router)
 app.include_router(payments.router)
 app.include_router(webhooks.router, prefix="/webhook")
 app.include_router(notifications.router)
 app.include_router(downloads.router)
 app.include_router(admin.router, prefix="/admin")
+app.include_router(audit.router)
+app.include_router(content_maintenance.router)
+app.include_router(live_tv.router)
+app.include_router(tmdb.router)
+app.include_router(system_monitor.router)
+app.include_router(m3u8_manager.router)
 app.include_router(queue_jobs.router)
 
 streams_dir = Path("storage/streams")

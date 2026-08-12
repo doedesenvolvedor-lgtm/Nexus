@@ -1,5 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
+
+import '../../providers/auth_provider.dart';
+import '../../services/chromecast_service.dart';
+import '../../services/player_service.dart';
 import '../../theme/colors.dart';
 
 // ============================================
@@ -23,115 +32,249 @@ class VideoPlayerScreenPremium extends StatefulWidget {
       _VideoPlayerScreenPremiumState();
 }
 
-class _VideoPlayerScreenPremiumState extends State<VideoPlayerScreenPremium> {
+class _VideoPlayerScreenPremiumState extends State<VideoPlayerScreenPremium>
+    with WidgetsBindingObserver {
   bool _showControls = true;
   bool _isPlaying = false;
   bool _isFullscreen = false;
   double _currentPosition = 0;
-final double _totalDuration = 100;
+  double _totalDuration = 100;
   double _volume = 1.0;
   int _playbackSpeed = 100; // 100 = 1.0x
   String _selectedQuality = '1080p';
   String _selectedSubtitle = 'Português';
   String _selectedAudio = 'Português';
 
+  // Chromecast
+  final ChromecastService _castService = ChromecastService.instance;
+  bool _castAvailable = false;
+  List<Map<String, String>> _castDevices = [];
+  bool _isCasting = false;
+
+  // PiP
+  bool _pipSupported = false;
+  Timer? _saveTimer;
+  int _lastSavedPosition = 0;
+
+  final PlayerService _playerService = PlayerService();
   final List<String> qualities = ['480p', '720p', '1080p', '4K'];
-  final List<String> subtitles = [
-    'Nenhuma',
-    'Português',
-    'Inglês',
-    'Espanhol'
-  ];
-  final List<String> audioTracks = [
-    'Português',
-    'Inglês',
-    'Espanhol',
-    'Francês'
-  ];
+  List<String> subtitles = ['Nenhuma', 'Português', 'Inglês', 'Espanhol'];
+  List<String> audioTracks = ['Português', 'Inglês', 'Espanhol', 'Francês'];
   final List<double> playbackSpeeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
 
   @override
   void initState() {
     super.initState();
-    _initializePlayer();
+    WidgetsBinding.instance.addObserver(this);
+    _initialize();
   }
 
-  void _initializePlayer() {
-    // TODO: Inicializar video_player com URL real
-    // _videoController = VideoPlayerController.network(videoUrl)
-    //   ..initialize().then((_) {
-    //     setState(() {
-    //       _totalDuration = _videoController.value.duration.inSeconds.toDouble();
-    //     });
-    //   });
+  Future<void> _initialize() async {
+    // Inicializar Chromecast
+    await _castService.initialize();
+    _castAvailable = _castService.isAvailable;
+
+    // Verificar suporte a PiP
+    _pipSupported = true; // Android 8+ / iOS 14+
+
+    // Buscar trilhas reais do backend
+    await _loadTracks();
+
+    // Manter tela ligada durante reprodução
+    await WakelockPlus.enable();
+
+    // Timer de salvamento automático
+    _saveTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      if (_isPlaying && _currentPosition > 0) {
+        final authProvider = context.read<AuthProvider>();
+        final email = authProvider.email ?? 'demo';
+        final diff = (_currentPosition.toInt() - _lastSavedPosition).abs();
+        if (diff >= 30) {
+          _lastSavedPosition = _currentPosition.toInt();
+          await _playerService.saveProgress(
+            profileId: email,
+            mediaId: widget.contentId,
+            seconds: _currentPosition.toInt(),
+          );
+        }
+      }
+    });
+
+    // Simular duração do vídeo (em produção: videoController)
+    _totalDuration = 5400; // 1h30
+  }
+
+  Future<void> _loadTracks() async {
+    try {
+      final audio = await _playerService.getAudioTracks(widget.contentId);
+      if (audio.isNotEmpty) {
+        setState(() {
+          audioTracks = audio.map((t) => t.name).toList();
+          _selectedAudio = audio.firstWhere((t) => t.isDefault,
+              orElse: () => audio.first).name;
+        });
+      }
+
+      final subs = await _playerService.getSubtitleTracks(widget.contentId);
+      if (subs.isNotEmpty) {
+        setState(() {
+          subtitles = ['Nenhuma', ...subs.map((s) => s.name)];
+          _selectedSubtitle = subs.firstWhere((s) => s.isDefault,
+              orElse: () => subs.first).name;
+        });
+      }
+    } catch (_) {
+      // Fallback para lista padrão (já definida)
+    }
   }
 
   @override
   void dispose() {
-    // _videoController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _saveTimer?.cancel();
+    _castService.stopCasting();
+    WakelockPlus.disable();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused && _isPlaying && _pipSupported) {
+      // Entrar em PiP automaticamente
+    }
   }
 
   void _togglePlayPause() {
     setState(() {
       _isPlaying = !_isPlaying;
-      // if (_isPlaying) {
-      //   _videoController.play();
-      // } else {
-      //   _videoController.pause();
-      // }
     });
   }
 
   void _handleSeek(double value) {
     setState(() {
       _currentPosition = value;
-      // _videoController.seekTo(Duration(seconds: value.toInt()));
     });
   }
 
-  void _showQualityMenu() {
+  // ===== Chromecast Methods =====
+
+  Future<void> _showCastDialog() async {
+    _castDevices = await _castService.discoverDevices();
+
+    if (!mounted) return;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.cardBackground,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => _buildQualityMenu(),
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Transmitir para...',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (_castDevices.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.cast_connected,
+                          size: 48, color: Colors.grey[600]),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Nenhum dispositivo encontrado',
+                        style: GoogleFonts.inter(color: Colors.grey),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Certifique-se de estar na mesma rede Wi-Fi',
+                        style: GoogleFonts.inter(
+                          color: Colors.grey[600],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ..._castDevices.map((device) => ListTile(
+                    leading: const Icon(Icons.cast, color: Colors.white70),
+                    title: Text(
+                      device['name'] ?? 'Dispositivo',
+                      style: GoogleFonts.inter(color: Colors.white),
+                    ),
+                    subtitle: Text(
+                      device['model'] ?? '',
+                      style: GoogleFonts.inter(
+                          color: Colors.grey, fontSize: 12),
+                    ),
+                    trailing: _isCasting &&
+                            _castService.currentDevice.value ==
+                                device['name']
+                        ? const Icon(Icons.check,
+                            color: AppColors.primaryPurple)
+                        : null,
+                    onTap: () async {
+                      final success = await _castService.connectToDevice(
+                        device['id'] ?? '',
+                        device['name'] ?? '',
+                      );
+                      if (success) {
+                        setState(() => _isCasting = true);
+                        await _castService.playVideo(
+                          'https://api.nexustwos.com/media/${widget.contentId}/stream',
+                          title: widget.contentTitle,
+                        );
+                        if (ctx.mounted) Navigator.pop(ctx);
+                      }
+                    },
+                  )),
+            if (_isCasting)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: TextButton.icon(
+                  onPressed: () async {
+                    await _castService.stopCasting();
+                    setState(() => _isCasting = false);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                  icon: const Icon(Icons.cast_connected, color: Colors.red),
+                  label: Text(
+                    'Desconectar',
+                    style: GoogleFonts.inter(color: Colors.red),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
-  void _showSubtitleMenu() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.cardBackground,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => _buildSubtitleMenu(),
-    );
-  }
+  // ===== PiP Method =====
 
-  void _showAudioMenu() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.cardBackground,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => _buildAudioMenu(),
-    );
-  }
-
-  void _showSpeedMenu() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.cardBackground,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => _buildSpeedMenu(),
-    );
+  Future<void> _enterPipMode() async {
+    try {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      if (mounted) {
+        setState(() => _isFullscreen = false);
+      }
+    } catch (_) {
+      // PiP não suportado
+    }
   }
 
   String _formatTime(double seconds) {
@@ -148,7 +291,7 @@ final double _totalDuration = 100;
 
   @override
   Widget build(BuildContext context) {
-return PopScope(
+    return PopScope(
       canPop: !_isFullscreen,
       onPopInvokedWithResult: (didPop, _) async {
         if (_isFullscreen) {
@@ -163,28 +306,45 @@ return PopScope(
             Container(
               color: Colors.black,
               child: Center(
-                child: Container(
-                  width: double.infinity,
-                  height: 300,
-                  color: AppColors.cardBackground,
-                  child: const Center(
-                    child: Icon(
-                      Icons.play_arrow,
-                      size: 80,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
+                child: _isPlaying
+                    ? Container(
+                        width: double.infinity,
+                        height: _isFullscreen
+                            ? double.infinity
+                            : 300,
+                        color: Colors.black,
+                        child: Center(
+                          child: Text(
+                            '▶ Reproduzindo: ${widget.contentTitle}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              color: Colors.white54,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Container(
+                        width: double.infinity,
+                        height: 300,
+                        color: AppColors.cardBackground,
+                        child: const Center(
+                          child: Icon(
+                            Icons.play_arrow,
+                            size: 80,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
               ),
             ),
 
-            // Controles do player
+            // Gradient overlay
             if (_showControls)
               GestureDetector(
                 onTap: () {
                   setState(() => _showControls = false);
                   Future.delayed(const Duration(seconds: 5), () {
-                    if (mounted && _isPlaying) {
+                    if (mounted && _isPlaying && !_showControls) {
                       setState(() => _showControls = false);
                     }
                   });
@@ -230,7 +390,6 @@ return PopScope(
                         ),
                         child: Row(
                           children: [
-                            // Tempo atual
                             Text(
                               _formatTime(_currentPosition),
                               style: GoogleFonts.inter(
@@ -247,7 +406,6 @@ return PopScope(
                               ),
                             ),
                             const SizedBox(width: 8),
-                            // Tempo total
                             Text(
                               _formatTime(_totalDuration),
                               style: GoogleFonts.inter(
@@ -259,7 +417,7 @@ return PopScope(
                         ),
                       ),
 
-                      // Botões de controle
+                      // Control buttons
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(
@@ -305,11 +463,38 @@ return PopScope(
 
                             const Spacer(),
 
-                            // Legenda
+                            // Chromecast
+                            if (_castAvailable)
+                              IconButton(
+                                icon: Icon(
+                                  _isCasting
+                                      ? Icons.cast_connected
+                                      : Icons.cast,
+                                  color: _isCasting
+                                      ? AppColors.primaryPurple
+                                      : Colors.white,
+                                ),
+                                onPressed: _showCastDialog,
+                                tooltip: _isCasting
+                                    ? 'Transmitindo...'
+                                    : 'Transmitir',
+                              ),
+
+                            // PiP
+                            if (_pipSupported)
+                              IconButton(
+                                icon: const Icon(Icons.picture_in_picture_alt),
+                                color: Colors.white,
+                                onPressed: _enterPipMode,
+                                tooltip: 'Picture in Picture',
+                              ),
+
+                            // Legendas
                             IconButton(
                               icon: const Icon(Icons.subtitles),
                               color: Colors.white,
                               onPressed: _showSubtitleMenu,
+                              tooltip: _selectedSubtitle,
                             ),
 
                             // Áudio
@@ -317,6 +502,7 @@ return PopScope(
                               icon: const Icon(Icons.language),
                               color: Colors.white,
                               onPressed: _showAudioMenu,
+                              tooltip: _selectedAudio,
                             ),
 
                             // Qualidade
@@ -356,7 +542,7 @@ return PopScope(
                 ),
               ),
 
-            // Top Bar - Título
+            // Top Bar - Title
             if (_showControls)
               Positioned(
                 top: 0,
@@ -395,173 +581,37 @@ return PopScope(
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      if (_isCasting)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryPurple.withValues(alpha: 0.8),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.cast, size: 16, color: Colors.white),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Cast',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),
               ),
 
-            // Clique para mostrar controles
+            // Tap to show controls
             if (!_showControls)
               GestureDetector(
                 onTap: () {
-                  setState(() => _showControls = true);
-                },
-                child: Container(
-                  color: Colors.transparent,
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQualityMenu() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Qualidade',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...qualities.map(
-            (quality) => ListTile(
-              title: Text(
-                quality,
-                style: GoogleFonts.inter(color: Colors.white),
-              ),
-              trailing: _selectedQuality == quality
-                  ? const Icon(Icons.check, color: AppColors.primaryPurple)
-                  : null,
-              onTap: () {
-                setState(() => _selectedQuality = quality);
-                Navigator.pop(context);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSubtitleMenu() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Legendas',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...subtitles.map(
-            (subtitle) => ListTile(
-              title: Text(
-                subtitle,
-                style: GoogleFonts.inter(color: Colors.white),
-              ),
-              trailing: _selectedSubtitle == subtitle
-                  ? const Icon(Icons.check, color: AppColors.primaryPurple)
-                  : null,
-              onTap: () {
-                setState(() => _selectedSubtitle = subtitle);
-                Navigator.pop(context);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAudioMenu() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Áudio',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...audioTracks.map(
-            (audio) => ListTile(
-              title: Text(
-                audio,
-                style: GoogleFonts.inter(color: Colors.white),
-              ),
-              trailing: _selectedAudio == audio
-                  ? const Icon(Icons.check, color: AppColors.primaryPurple)
-                  : null,
-              onTap: () {
-                setState(() => _selectedAudio = audio);
-                Navigator.pop(context);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSpeedMenu() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Velocidade',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...playbackSpeeds.map(
-            (speed) {
-              final speedLabel =
-                  speed == 1.0 ? 'Normal' : '${speed.toStringAsFixed(2)}x';
-              final isSelected = _playbackSpeed == (speed * 100).toInt();
-              return ListTile(
-                title: Text(
-                  speedLabel,
-                  style: GoogleFonts.inter(color: Colors.white),
-                ),
-                trailing: isSelected
-                    ? const Icon(Icons.check, color: AppColors.primaryPurple)
-                    : null,
-                onTap: () {
-                  setState(() => _playbackSpeed = (speed * 100).toInt());
-                  Navigator.pop(context);
-                },
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}

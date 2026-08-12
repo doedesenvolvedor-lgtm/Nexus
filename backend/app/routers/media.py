@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -10,6 +10,7 @@ from app.security_admin import get_admin_user
 from app.schemas import MediaCreate, MediaResponse
 from app.services.cache_service import build_cache_key, delete_by_prefix, get_json, set_json
 from app.services.media_service import get_catalog, search
+from app.services.parental_control_service import check_access
 from app.services.stream_token_service import create_stream_token, create_playlist_token
 
 router = APIRouter(tags=["Media"])
@@ -168,6 +169,7 @@ def play(
     id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    profile_id: Optional[str] = Query(default=None, description="ID do perfil ativo (para enforcement de Controle Parental)"),
 ):
     """
     Retorna informações de streaming com token JWT.
@@ -180,6 +182,23 @@ def play(
     media = db.query(MediaContent).filter(MediaContent.id == id).first()
     if media is None:
         raise HTTPException(status_code=404, detail="Vídeo não encontrado.")
+
+    # Enforcement de Controle Parental no backend (sem bypass client-side)
+    if profile_id:
+        from uuid import UUID
+        try:
+            result = check_access(
+                db,
+                profile_id=UUID(profile_id),
+                content_type="movie" if media.content_type == "movie" else "series",
+                target_id=media.id,
+                rating=media.rating,
+                title=media.title,
+            )
+        except Exception:
+            result = {"allowed": True}
+        if not result.get("allowed"):
+            raise HTTPException(status_code=403, detail=result.get("message", "Acesso negado pelo Controle Parental."))
     
     # Gerar token de streaming
     stream_token = create_stream_token(

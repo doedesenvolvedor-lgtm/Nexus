@@ -6,8 +6,11 @@ import 'package:video_player/video_player.dart';
 
 import '../../models/media.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/parental_control_provider.dart';
 import '../../providers/player_provider.dart';
+import '../../providers/profile_provider.dart';
 import '../../services/player_service.dart';
+import '../../widgets/parental_lock_dialog.dart';
 
 class PlayerScreen extends StatefulWidget {
   const PlayerScreen({super.key});
@@ -24,6 +27,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   int lastSavedPosition = 0;
   bool _isLoading = true;
   Media? _media;
+  String _profileId = '';
 
   @override
   void initState() {
@@ -31,15 +35,39 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _initialize();
   }
 
-  Future<void> _initialize() async {
+Future<void> _initialize() async {
     _media = ModalRoute.of(context)!.settings.arguments as Media;
     final media = _media!;
-    
+
     final authProvider = context.read<AuthProvider>();
-    
+    final profileProvider = context.read<ProfileProvider>();
+    final profileId = profileProvider.selectedProfile?.id ?? authProvider.email ?? '';
+
+    // Propagar token para chamadas autenticadas (history)
+    service.setToken(authProvider.token);
+
+    // Defensive check: se o perfil está bloqueado por inatividade, exigir PIN.
+    final profile = profileProvider.selectedProfile;
+    if (profile != null) {
+      final parental = context.read<ParentalControlProvider>();
+      if (parental.isLocked) {
+        final unlocked = await ParentalLockDialog.show(
+          context,
+          profileId: profile.id,
+          title: 'Sessão bloqueada',
+          message: 'Por segurança, o Controle Parental exige nova autenticação '
+              'após um período de inatividade.\nInforme o PIN para continuar.',
+        );
+        if (!unlocked && mounted) {
+          Navigator.pop(context);
+          return;
+        }
+      }
+    }
+
     controller = VideoPlayerController.networkUrl(Uri.parse(media.video))
       ..initialize().then((_) async {
-        final position = await service.getSavedPosition(media.id, authProvider.email ?? '');
+        final position = await service.getSavedPosition(media.id, profileId);
         savedPosition = position;
         lastSavedPosition = position;
         if (mounted) {
@@ -60,19 +88,21 @@ class _PlayerScreenState extends State<PlayerScreen> {
       if ((seconds - lastSavedPosition).abs() >= 30 && seconds != lastSavedPosition) {
         lastSavedPosition = seconds;
         service.saveProgress(
-          profileId: authProvider.email ?? 'demo-profile',
+          profileId: profileId,
           mediaId: media.id,
           seconds: seconds,
         );
       }
     });
+
+    _profileId = profileId;
   }
 
   @override
   void dispose() {
     if (lastSavedPosition > 0 && _media != null) {
       service.saveProgress(
-        profileId: 'demo-profile',
+        profileId: _profileId,
         mediaId: _media!.id,
         seconds: lastSavedPosition,
       );

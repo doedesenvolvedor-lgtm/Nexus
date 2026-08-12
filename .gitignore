@@ -36,6 +36,12 @@ google-services.json
 # Environment files
 .env
 **/.env
+**/.env.local
+**/.env.*.local
+*.env
+.env.*
+**/.env.*
+**/.env.vps
 
 # Python cache and virtual environments
 __pycache__/

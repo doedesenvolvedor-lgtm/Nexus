@@ -28,6 +28,7 @@ const LogsPage = lazy(() => import('./pages/Logs'))
 const AnalyticsPage = lazy(() => import('./pages/Analytics'))
 const SettingsPage = lazy(() => import('./pages/Settings'))
 const AdminProfilePage = lazy(() => import('./pages/AdminProfile'))
+const ParentalControlPage = lazy(() => import('./pages/ParentalControl'))
 
 const PageLoader = () => (
   <div className="flex min-h-[40vh] items-center justify-center text-nexus-text-secondary">
@@ -88,7 +89,8 @@ function App() {
                           <Route path="/comments" element={<CommentsPage />} />
                           <Route path="/analytics" element={<AnalyticsPage />} />
                           <Route path="/logs" element={<LogsPage />} />
-                          <Route path="/settings" element={<SettingsPage />} />
+<Route path="/settings" element={<SettingsPage />} />
+                          <Route path="/parental" element={<ParentalControlPage />} />
                           <Route path="/profile" element={<AdminProfilePage />} />
                           <Route path="/" element={<Navigate to="/dashboard" replace />} />
                           <Route path="*" element={<NotFoundPage />} />

@@ -28,7 +28,7 @@ def verify_password(password: str, hashed: str):
     return pwd_context.verify(password, hashed)
 
 
-def create_access_token(data: dict):
+def create_access_token(data: dict, jti: str | None = None):
     _ensure_security_config()
     payload = data.copy()
     now = datetime.now(timezone.utc)
@@ -36,13 +36,13 @@ def create_access_token(data: dict):
     payload.update({
         "exp": expire,
         "iat": now,
-        "jti": str(uuid.uuid4()),
+        "jti": jti or str(uuid.uuid4()),
         "type": "access",
     })
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def create_refresh_token(data: dict):
+def create_refresh_token(data: dict, jti: str | None = None):
     """Cria um refresh token com expiração mais longa."""
     _ensure_security_config()
     payload = data.copy()
@@ -51,7 +51,7 @@ def create_refresh_token(data: dict):
     payload.update({
         "exp": expire,
         "iat": now,
-        "jti": str(uuid.uuid4()),
+        "jti": jti or str(uuid.uuid4()),
         "type": "refresh",
     })
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)

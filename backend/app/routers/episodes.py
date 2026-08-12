@@ -2,14 +2,19 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Episode, Season
+from app.models import Episode, Season, User
 from app.schemas import EpisodeCreate, EpisodeResponse, SeasonCreate, SeasonResponse
+from app.security_admin import get_admin_user
 
 router = APIRouter(tags=["Episódios"])
 
 
 @router.post("/seasons", response_model=SeasonResponse)
-def create_season(season: SeasonCreate, db: Session = Depends(get_db)):
+def create_season(
+    season: SeasonCreate,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_admin_user),
+):
     obj = Season(**season.model_dump())
     db.add(obj)
     db.commit()
@@ -23,7 +28,11 @@ def seasons(media_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/episodes", response_model=EpisodeResponse)
-def create_episode(episode: EpisodeCreate, db: Session = Depends(get_db)):
+def create_episode(
+    episode: EpisodeCreate,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_admin_user),
+):
     obj = Episode(**episode.model_dump())
     db.add(obj)
     db.commit()

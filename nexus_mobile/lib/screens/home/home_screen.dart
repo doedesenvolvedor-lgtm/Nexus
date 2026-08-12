@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../models/media.dart';
+import '../../providers/parental_control_provider.dart';
+import '../../providers/profile_provider.dart';
 import '../../services/media_service.dart';
 import '../../widgets/banner_widget.dart';
 import '../../widgets/category_row.dart';
@@ -27,11 +30,18 @@ class _HomeScreenState extends State<HomeScreen> {
     load();
   }
 
-  Future<void> load() async {
+Future<void> load() async {
     setState(() {
       loading = true;
       errorMessage = null;
     });
+
+    // Carrega configurações de Controle Parental do perfil ativo.
+    final profileProvider = context.read<ProfileProvider>();
+    final profile = profileProvider.selectedProfile;
+    final hideAdult = profile != null
+        ? await _shouldHideAdultContent(profile.id)
+        : false;
 
     try {
       final responses = await Future.wait([
@@ -43,9 +53,18 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
 
+      var fetchedMovies = responses[0];
+      var fetchedSeries = responses[1];
+
+      // Filtra conteúdo +18 / acima da classificação permitida.
+      if (profile != null && hideAdult) {
+        fetchedMovies = fetchedMovies.where((m) => !_isAdult(m.rating)).toList();
+        fetchedSeries = fetchedSeries.where((s) => !_isAdult(s.rating)).toList();
+      }
+
       setState(() {
-        movies = responses[0];
-        series = responses[1];
+        movies = fetchedMovies;
+        series = fetchedSeries;
         loading = false;
       });
     } catch (_) {
@@ -58,6 +77,23 @@ class _HomeScreenState extends State<HomeScreen> {
         errorMessage = 'Não foi possível carregar o catálogo agora.';
       });
     }
+  }
+
+  /// Verifica se o perfil deve ocultar conteúdo adulto.
+  Future<bool> _shouldHideAdultContent(String profileId) async {
+    final parental = context.read<ParentalControlProvider>();
+    final settings = parental.settings;
+    if (settings != null) {
+      return settings.hideAdultContent;
+    }
+    final loaded = await parental.loadSettings(profileId);
+    return loaded?.hideAdultContent ?? false;
+  }
+
+  /// Indica se a classificação é adulta (+18).
+  bool _isAdult(String rating) {
+    final normalized = rating.trim().toUpperCase();
+    return normalized == '18' || normalized == 'NC-17' || normalized == 'R';
   }
 
   @override
